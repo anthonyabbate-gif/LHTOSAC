@@ -170,14 +170,146 @@
         .select-all-row button:hover {
             background: #e9ecef;
         }
+
+        /* ---- panel chrome: collapse + tabs ---- */
+        .control-panel {
+            transition: width .18s ease, max-height .18s ease, padding .18s ease;
+        }
+        .control-panel.wide { max-width: 680px; }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .panel-header h2 { margin-bottom: 0; }
+        .collapse-btn {
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            border: 1px solid #d5d5d5;
+            border-radius: 5px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 15px;
+            line-height: 1;
+            color: #444;
+        }
+        .collapse-btn:hover { background: #e9ecef; }
+        .collapse-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+        .control-panel.collapsed { max-height: none; padding-bottom: 14px; }
+        .control-panel.collapsed .panel-body { display: none; }
+
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin: 12px 0 10px;
+            border-bottom: 1px solid #e3e3e3;
+        }
+        .tab {
+            padding: 6px 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+        .tab:hover { color: #222; }
+        .tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; font-weight: 600; }
+
+        /* ---- table view ---- */
+        .table-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .table-controls input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font: inherit;
+            font-size: 12px;
+        }
+        .tiny { font-size: 11px; color: #555; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .table-meta { font-size: 11px; color: #666; margin-bottom: 6px; }
+        .table-scroll { max-height: 52vh; overflow: auto; border: 1px solid #eee; border-radius: 5px; }
+        #parcel-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+        #parcel-table th {
+            position: sticky;
+            top: 0;
+            background: #f6f7f8;
+            text-align: left;
+            padding: 6px 7px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            color: #555;
+        }
+        #parcel-table th:hover { background: #ebedef; }
+        #parcel-table th .arrow { color: #1d4ed8; }
+        #parcel-table td {
+            padding: 4px 7px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: top;
+        }
+        #parcel-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        #parcel-table tbody tr { cursor: pointer; }
+        #parcel-table tbody tr:hover { background: #eff4ff; }
+        .cat-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        .export-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #fff;
+            color: #2563eb;
+            border: 1px solid #2563eb;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+        }
+        .export-btn:hover { background: #eff4ff; }
+
+        @media (max-width: 760px) {
+            .control-panel, .control-panel.wide {
+                max-width: calc(100vw - 20px);
+            }
+            .table-scroll { max-height: 44vh; }
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
     
-    <div class="control-panel">
-        <h2>Long Hill Township Map</h2>
-        
+    <div class="control-panel" id="control-panel">
+        <div class="panel-header">
+            <h2>Long Hill Township Map</h2>
+            <button class="collapse-btn" id="collapse-btn" onclick="togglePanel()"
+                    title="Collapse panel" aria-label="Collapse panel" aria-expanded="true">&minus;</button>
+        </div>
+
+        <div class="panel-body" id="panel-body">
+        <div class="tab-bar">
+            <button class="tab active" id="tab-btn-filters" onclick="showTab('filters')">Layers &amp; Filters</button>
+            <button class="tab" id="tab-btn-table" onclick="showTab('table')">Table</button>
+        </div>
+
+        <div id="tab-filters">
         <h3>Layers</h3>
         <label>
             <input type="checkbox" id="toggle-parcels" checked>
@@ -204,6 +336,23 @@
             <button onclick="highlightBlocks()">Highlight</button>
             <button class="clear-btn" onclick="clearHighlights()">Clear Highlights</button>
         </div>
+        </div><!-- /tab-filters -->
+
+        <div id="tab-table" hidden>
+            <div class="table-controls">
+                <input type="text" id="table-search" placeholder="Search block, lot, owner, address&hellip;">
+                <label class="tiny"><input type="checkbox" id="table-os-only" checked> Open space only</label>
+            </div>
+            <div class="table-meta" id="table-meta"></div>
+            <div class="table-scroll">
+                <table id="parcel-table">
+                    <thead><tr id="table-head"></tr></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <button class="export-btn" onclick="exportCSV()">Export visible rows as CSV</button>
+        </div>
+        </div><!-- /panel-body -->
     </div>
 
     <div class="status-bar" id="status-bar">
@@ -232,7 +381,8 @@
         //     The township-owned lots already inventoried in those blocks were moved to
         //     Wetland/Floodplain; any lots in those blocks NOT yet in this inventory are
         //     still unenumerated. Use tools/block-expander.html to list them.
-        //   - 14101_17.2 may need to be 14101_17.02; see tools/block-14101-check.html.
+        //   - 14101_17.2: reviewed and deliberately left as-is. The lot-number spelling
+        //     was raised and settled; do not "fix" it to 17.02 without re-deciding.
         const OPEN_SPACE_CATEGORIES = {
             "Federal": {
                 color: "#2d6a4f",
@@ -484,6 +634,7 @@
                         activeOSCategories.delete(key);
                     }
                     renderParcels();
+                    renderTable();
                 });
                 container.appendChild(label);
             });
@@ -564,6 +715,7 @@
             
             renderParcels();
             renderBlockLabels();
+            renderTable();
 
             // Fit map to parcels
             if (parcelsLayer.getLayers().length > 0) {
@@ -768,6 +920,133 @@
                 map.removeLayer(blockLabelsLayer);
             }
         });
+
+        // ---------------------------------------------------------- panel chrome
+        function togglePanel() {
+            const panel = document.getElementById('control-panel');
+            const btn   = document.getElementById('collapse-btn');
+            const open  = !panel.classList.toggle('collapsed');
+            btn.innerHTML = open ? '&minus;' : '+';
+            btn.title = btn.ariaLabel = open ? 'Collapse panel' : 'Expand panel';
+            btn.setAttribute('aria-expanded', String(open));
+        }
+
+        let activeTab = 'filters';
+        function showTab(tab) {
+            activeTab = tab;
+            document.getElementById('tab-filters').hidden = (tab !== 'filters');
+            document.getElementById('tab-table').hidden   = (tab !== 'table');
+            document.getElementById('tab-btn-filters').classList.toggle('active', tab === 'filters');
+            document.getElementById('tab-btn-table').classList.toggle('active', tab === 'table');
+            document.getElementById('control-panel').classList.toggle('wide', tab === 'table');
+            if (tab === 'table') renderTable();
+        }
+
+        // ---------------------------------------------------------- table view
+        const COLUMNS = [
+            { key: 'block',  label: 'Block',    get: p => p.PCLBLOCK || '' },
+            { key: 'lot',    label: 'Lot',      get: p => p.PCLLOT || '' },
+            { key: 'cat',    label: 'Category', get: p => p.__cat || '' },
+            { key: 'owner',  label: 'Owner',    get: p => p.OWNER_NAME || '' },
+            { key: 'loc',    label: 'Location', get: p => p.PROP_LOC || '' },
+            { key: 'acres',  label: 'Acres',    get: p => p.CALC_ACRE == null ? null : Number(p.CALC_ACRE), num: true },
+            { key: 'class',  label: 'Class',    get: p => p.PROP_CLASS || '' }
+        ];
+        let sortKey = 'block', sortAsc = true;
+        const MAX_ROWS = 400;
+
+        function tableRows() {
+            const q = (document.getElementById('table-search').value || '').trim().toLowerCase();
+            const osOnly = document.getElementById('table-os-only').checked;
+            let rows = allParcels.map(f => {
+                const p = Object.assign({}, f.properties);
+                p.__cat = getParcelOSCategory(f) || '';
+                p.__feature = f;
+                return p;
+            });
+            if (osOnly) rows = rows.filter(p => p.__cat);
+            if (q) rows = rows.filter(p =>
+                [p.PCLBLOCK, p.PCLLOT, p.__cat, p.OWNER_NAME, p.PROP_LOC]
+                    .some(v => String(v || '').toLowerCase().includes(q)));
+            const col = COLUMNS.find(c => c.key === sortKey);
+            rows.sort((a, b) => {
+                let x = col.get(a), y = col.get(b);
+                if (col.num) { x = x ?? -Infinity; y = y ?? -Infinity; return sortAsc ? x - y : y - x; }
+                const c = String(x).localeCompare(String(y), undefined, { numeric: true });
+                return sortAsc ? c : -c;
+            });
+            return rows;
+        }
+
+        function renderTable() {
+            if (activeTab !== 'table') return;
+            const rows = tableRows();
+            const shown = rows.slice(0, MAX_ROWS);
+
+            document.getElementById('table-head').innerHTML = COLUMNS.map(c =>
+                `<th onclick="sortTable('${c.key}')">${c.label}` +
+                (sortKey === c.key ? ` <span class="arrow">${sortAsc ? '\u25b2' : '\u25bc'}</span>` : '') +
+                `</th>`).join('');
+
+            document.getElementById('table-body').innerHTML = shown.map((p, i) => {
+                const cat = p.__cat, color = cat ? OPEN_SPACE_CATEGORIES[cat].color : null;
+                return `<tr onclick="focusParcel(${i})">` + COLUMNS.map(c => {
+                    const v = c.get(p);
+                    if (c.key === 'cat')
+                        return `<td>${cat ? `<span class="cat-dot" style="background:${color}"></span>${cat}` : '<span style="color:#aaa">\u2014</span>'}</td>`;
+                    if (c.num)
+                        return `<td class="num">${v == null ? '' : v.toFixed(2)}</td>`;
+                    return `<td>${String(v)}</td>`;
+                }).join('') + `</tr>`;
+            }).join('');
+
+            window.__tableShown = shown;
+            const meta = document.getElementById('table-meta');
+            meta.textContent = rows.length > MAX_ROWS
+                ? `Showing first ${MAX_ROWS} of ${rows.length} parcels \u2014 search to narrow.`
+                : `${rows.length} parcel${rows.length === 1 ? '' : 's'}.`;
+        }
+
+        function sortTable(key) {
+            if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+            renderTable();
+        }
+
+        function focusParcel(i) {
+            const p = (window.__tableShown || [])[i];
+            if (!p || !p.__feature) return;
+            const layer = L.geoJSON(p.__feature);
+            map.fitBounds(layer.getBounds().pad(1.5));
+            L.popup()
+                .setLatLng(layer.getBounds().getCenter())
+                .setContent(`<div class="popup-content"><strong>Block ${p.PCLBLOCK} / Lot ${p.PCLLOT}</strong><br>` +
+                    (p.__cat ? `${p.__cat}<br>` : '') +
+                    (p.PROP_LOC ? `\ud83d\udccd ${p.PROP_LOC}<br>` : '') +
+                    (p.OWNER_NAME ? `\ud83d\udc64 ${p.OWNER_NAME}` : '') + `</div>`)
+                .openOn(map);
+        }
+
+        function exportCSV() {
+            const rows = tableRows();
+            const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const csv = [COLUMNS.map(c => esc(c.label)).join(',')]
+                .concat(rows.map(p => COLUMNS.map(c => {
+                    const v = c.get(p);
+                    return esc(c.num ? (v == null ? '' : v.toFixed(2)) : v);
+                }).join(',')))
+                .join('\n');
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            const a = Object.assign(document.createElement('a'), {
+                href: url,
+                download: `long-hill-parcels-${new Date().toISOString().slice(0, 10)}.csv`
+            });
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            showStatus(`\u2713 Exported ${rows.length} rows`);
+        }
+
+        document.getElementById('table-search').addEventListener('input', renderTable);
+        document.getElementById('table-os-only').addEventListener('change', renderTable);
 
         // Init
         buildOSCheckboxes();

@@ -9,7 +9,7 @@ inventory is inlined in `index.html`.
 
 | Page | What it does |
 |---|---|
-| [`index.html`](./) | The main map — parcels, block labels, open space by owner type, block highlighting |
+| [`index.html`](./) | The main map — parcels, block labels, open space by owner type, block highlighting, and a sortable table view |
 | [`tools/block-expander.html`](./tools/block-expander.html) | Lists every lot a block contains and flags township-owned lots missing from the inventory |
 | [`tools/block-14101-check.html`](./tools/block-14101-check.html) | Checks whether lot 17 in block 14101 is spelled `17.02` or `17.2` in the parcel service |
 
@@ -20,6 +20,11 @@ revised per AbbateMapCritique3.
 
 19 categories covering 392 parcels. Categories marked `provisional` render with a
 dashed outline — they are parked for OSAC review rather than settled classifications.
+
+### Settled
+
+- **`14101_17.2`** — the lot-number spelling was queried against the parcel service
+  and deliberately left as-is. Not an outstanding item.
 
 ### Unresolved
 
@@ -34,7 +39,6 @@ dashed outline — they are parked for OSAC review rather than settled classific
   Township-owned lots already inventoried in those blocks were moved to
   Wetland/Floodplain; any not yet inventoried remain unenumerated. Use the block
   expander to list them.
-- **`14101_17.2`** may need to be `14101_17.02`. See the block 14101 check.
 
 ## Data source
 
