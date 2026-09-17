@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long Hill Township - Interactive Tax & Zoning Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            max-width: 340px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .control-panel h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .control-panel h3 {
+            font-size: 13px;
+            margin: 12px 0 6px;
+            color: #555;
+            font-weight: 600;
+        }
+        .control-panel label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            padding: 3px 0;
+            cursor: pointer;
+        }
+        .control-panel label input[type="checkbox"] {
+            flex-shrink: 0;
+        }
+        .section {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .os-category-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 2px 0;
+            cursor: pointer;
+        }
+        .os-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .os-swatch.provisional {
+            outline: 1.5px dashed #333;
+            outline-offset: 1px;
+        }
+        .highlight-section {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .highlight-section textarea {
+            width: 100%;
+            height: 60px;
+            margin-top: 6px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        .highlight-section button {
+            margin-top: 6px;
+            padding: 6px 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+        }
+        .highlight-section button:hover {
+            background: #1d4ed8;
+        }
+        .clear-btn {
+            background: #dc2626 !important;
+            margin-top: 4px;
+        }
+        .clear-btn:hover {
+            background: #b91c1c !important;
+        }
+        .status-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 12px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ddd;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .popup-content {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .popup-content strong {
+            color: #1e40af;
+        }
+        .popup-content .os-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            margin-top: 4px;
+        }
+        .select-all-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .select-all-row button {
+            font-size: 10px;
+            padding: 2px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        .select-all-row button:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="control-panel">
+        <h2>Long Hill Township Map</h2>
+        
+        <h3>Layers</h3>
+        <label>
+            <input type="checkbox" id="toggle-parcels" checked>
+            Tax Parcels
+        </label>
+        <label>
+            <input type="checkbox" id="toggle-blocks" checked>
+            Block Numbers
+        </label>
+
+        <div class="section">
+            <h3>Open Space — by Owner Type</h3>
+            <div class="select-all-row">
+                <button onclick="toggleAllOS(true)">Select All</button>
+                <button onclick="toggleAllOS(false)">Deselect All</button>
+            </div>
+            <div id="os-checkboxes"></div>
+        </div>
+
+        <div class="highlight-section">
+            <h3>Highlight Blocks</h3>
+            <p style="font-size:11px; color:#666;">Enter block numbers (comma/newline separated):</p>
+            <textarea id="block-input" placeholder="e.g. 10101, 10102, 10201"></textarea>
+            <button onclick="highlightBlocks()">Highlight</button>
+            <button class="clear-btn" onclick="clearHighlights()">Clear Highlights</button>
+        </div>
+    </div>
+
+    <div class="status-bar" id="status-bar">
+        <span class="loading-spinner"></span> Loading parcels...
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Open Space Inventory Data (inlined)
+        // Source: Long Hill Township Open Space Element of the Master Plan (17 December 2013)
+        // Revised per AbbateMapCritique3 (supersedes critiques 1b and 2).
+        //
+        // Categories flagged `provisional: true` render with a dashed outline: they are
+        // parked for OSAC review, not settled classifications. "For OSAC Review" holds
+        //   - GSNWR staff housing (items 8-10) and life rights (items 11-16): these are
+        //     on paper part of the refuge but physically ordinary residences. Pending
+        //     verification with the refuge manager.
+        //   - Digregorio 10301_13 / 10301_15 (item 19): approved subdivision/donation
+        //     that never happened. Pending check with the PZC.
+        //
+        // Still open, deliberately NOT applied here:
+        //   - Items 20-23 (schools): action is "possibly no change on the map" — the
+        //     unresolved question is how to score partial open-space acreage per
+        //     General Note 2B, which is a data-table issue, not a map recolour.
+        //   - Items 30-33 name whole blocks ("10403-10409 all", "10506 all", "10507 all").
+        //     The township-owned lots already inventoried in those blocks were moved to
+        //     Wetland/Floodplain; any lots in those blocks NOT yet in this inventory are
+        //     still unenumerated. Use tools/block-expander.html to list them.
+        //   - 14101_17.2 may need to be 14101_17.02; see tools/block-14101-check.html.
+        const OPEN_SPACE_CATEGORIES = {
+            "Federal": {
+                color: "#2d6a4f",
+                label: "Federal (Great Swamp NWR)",
+                parcels: [
+                    "15201_2","15201_3","14501_12","14401_8","14401_7.02","14501_3","14501_4",
+                    "15201_1","14501_16","14501_14","14501_13","14501_10","14501_11","14501_8.01",
+                    "14501_6","14501_5","14501_5.01","14501_2","14401_7.03","14401_5","14401_3",
+                    "14401_2","14401_1","12801_6.14","12801_8","12803_35","14801_8","14801_22",
+                    "15101_6","15101_9","15101_7","15101_8","14901_3","14901_1","14901_2",
+                    "14901_1.01","15001_3.07","15001_3.06","15001_3.01","15001_3","15001_1","15001_2",
+                    "14901_7","14901_5","15001_5","15001_4","14801_24","15101_5","15101_4",
+                    "14701_39","14701_26","14602_19","14602_5","14602_5.01","14602_3","14101_6",
+                    "14101_7","14701_31.01","14701_75","14701_32","14701_76","14602_2","15202_3.03",
+                    "15202_1","15202_2","14301_3","14101_62","14101_60","14101_17.2","14101_53",
+                    "14101_52","14101_54","14101_61","15202_8","15202_7","15101_2","15101_1",
+                    "15202_6.02","15202_6.03","15202_6.01","15202_6","15202_5","14701_38","15202_4",
+                    "14701_37","15202_3.10","15202_3.01","14701_35.02","15202_3.06","14701_78","14601_3",
+                    "14601_5","14502_5","14502_5.01","14502_4","14502_4.01","14502_3.02","14502_1",
+                    "14301_1","14301_2","12801_9.05","15101_3"
+                ]
+            },
+            "State": {
+                color: "#9b2226",
+                label: "State (NJ DEP)",
+                parcels: [
+                    "10201_6.05","14701_30.03"
+                ]
+            },
+            "County": {
+                color: "#ee9b00",
+                label: "County (Morris County)",
+                parcels: [
+                    "10201_10.21","10301_12.04","13501_10","13406_26","12202_1","12202_9","12202_7",
+                    "10101_18","10301_16.02","10301_16","10101_21","10201_10.22","10201_10.23","10101_20"
+                ]
+            },
+            "School": {
+                color: "#ae2012",
+                label: "School (Board of Ed)",
+                parcels: [
+                    "13002_1","12901_4.01","10701_3"
+                ]
+            },
+            "Town — Parks & Rec": {
+                color: "#0077b6",
+                label: "Town — Parks & Recreation",
+                parcels: [
+                    "10509_1","13108_7","10508_1","13102_20","10511_1","13104_1","13105_23",
+                    "14602_9","10510_1","10601_10","12901_4","11301_1","11301_2","11301_3"
+                ]
+            },
+            "Town — Open Space": {
+                color: "#219ebc",
+                label: "Town — Open Space (Density Mod / Contiguous)",
+                parcels: [
+                    "12702_47.10","13407_15","13404_37","13701_23","10202_8","13301_1","13201_1",
+                    "13607_40","13404_25","13402_5","13406_39","13404_15","10402_54","10402_8",
+                    "11202_13","11203_15.01","11202_1","11203_16","11609_7.01","13403_36","13501_13",
+                    "13603_6","13603_3","13501_7","13402_1.03","10502_9","10503_5","11513_12",
+                    "11611_9.01","13515_16","13516_25","13501_11","11610_8.01","13404_38.01","12402_11",
+                    "11506_5","11802_20.01","10410_1","11611_13","13511_6","13511_2","13515_35",
+                    "13517_1","13507_9","10910_1","14701_36","14401_5.02","14205_4.02","11803_10.01",
+                    "11804_10","13512_21","13703_6","13702_5","11608_6","11001_23.01","12004_12",
+                    "10411_6","13103_1","13103_35","13103_43"
+                ]
+            },
+            "Town — Other": {
+                color: "#8ecae6",
+                label: "Town — Other (No OS / Parking)",
+                parcels: [
+                    "12305_1"
+                ]
+            },
+            "Exempt Private": {
+                color: "#7b2d8b",
+                label: "Exempt Private (Preservation)",
+                parcels: [
+                    "10504_11","10505_4","10701_23"
+                ]
+            },
+            "Community Association": {
+                color: "#bc6c25",
+                label: "Community Association",
+                parcels: [
+                    "12101_3","10105_17","10106_10","12201_4","11510_4","10701_22.01","10106_16",
+                    "10106_43","13302_19.01","10702_1","10701_2","10908_4","10301_16.05","13302_19.02"
+                ]
+            },
+            "Utility ROW": {
+                color: "#6c757d",
+                label: "Utility Right-of-Way",
+                parcels: [
+                    "10101_22","13908_15.01","14901_11.01","14801_15","11509_6","10403_1","10301_26.02",
+                    "10301_25.01","10301_24.01","10301_16.01","11001_23.03","11001_32","11001_32.01","13406_21",
+                    "11001_35","11401_17","11401_16.01","11401_16","11401_15","11401_22","11501_2",
+                    "10411_3","10411_2","10301_14"
+                ]
+            },
+            "Cemetery": {
+                color: "#495057",
+                label: "Cemetery",
+                parcels: [
+                    "14801_18","12901_71","12901_70","12901_69"
+                ]
+            },
+            "Farm Land": {
+                color: "#606c38",
+                label: "Farm Land (Qualified)",
+                parcels: [
+                    "12806_6","12806_6.02","13607_42","13607_41","13701_32","14901_10.01","14901_11",
+                    "13701_31.01","13701_31","14801_1","14801_2","14801_23","14701_24","14701_25",
+                    "14701_25.01","14602_5.02","15202_3.02","11706_1","11706_21","11705_1","11608_10",
+                    "11704_1","11609_1","10301_9","14701_35.01","14701_79","14501_6.05"
+                ]
+            },
+            "Town — Blue Acres": {
+                color: "#023e8a",
+                label: "Town — Blue Acres",
+                parcels: [
+                    "10503_8","10504_8","11601_10","11601_9","11601_8","11602_28","11204_26"
+                ]
+            },
+            "Private Vacant": {
+                color: "#adb5bd",
+                label: "Taxable Private Vacant",
+                parcels: [
+                    "10409_4","10409_2","10408_3","10405_5","10405_4","14101_52.01","10504_13",
+                    "10504_10","13302_16.01","13514_1","13501_12","10403_42","10504_3","14101_63",
+                    "10511_5","13515_19","13512_30","13515_13","13515_10","13515_7","13511_1",
+                    "13516_26","11502_1","11513_10","11104_18","11104_16","11104_14","11104_11",
+                    "11104_8","11104_4","13508_20","10906_5","10903_6","10904_1","10905_1",
+                    "10903_9","10903_21","10903_13","11509_19","11509_22","11509_24","11510_6",
+                    "11509_25","10402_9","10402_7","10402_5","10402_3","10402_1","10402_4",
+                    "10301_26.01","10405_2","10406_6","11609_10","11704_15","11610_1","11703_1",
+                    "11610_10","11611_1","11702_15","13510_20.01","13511_27","13511_11","13510_18",
+                    "13511_9","13508_12","13515_30","11401_23","14602_8","14602_4.01","11510_7",
+                    "11605_14","11508_10","12201_5","10801_4"
+                ]
+            },
+            "Town — Wetland/Floodplain": {
+                color: "#48cae4",
+                label: "Town — Undevelopable Wetland / Floodplain",
+                parcels: [
+                    "11504_1","11507_4.01","11507_4.02","10201_10.14","10701_4","10801_5","11401_5",
+                    "11503_3","11505_1","11802_1","12203_4","12701_9","12904_7","10403_21",
+                    "10404_1","10405_1","10405_3","10406_1","10407_1","10407_2","10408_1",
+                    "10409_1","10505_1","10505_2","10506_1","10507_1"
+                ]
+            },
+            "Town — Detention Basin": {
+                color: "#3a0ca3",
+                label: "Town — Community Detention Basin",
+                parcels: [
+                    "12901_60","12203_32","13204_11"
+                ]
+            },
+            "Town — Upland Open Space": {
+                color: "#52b788",
+                label: "Town — Upland Open Space",
+                parcels: [
+                    "13205_15"
+                ]
+            },
+            "Town — Unbuildable Open Space": {
+                color: "#9d4edd",
+                label: "Town — Unbuildable Open Space",
+                parcels: [
+                    "12301_3","12306_1"
+                ]
+            },
+            "For OSAC Review": {
+                color: "#f72585",
+                label: "For OSAC Review (unresolved)",
+                provisional: true,
+                parcels: [
+                    "14701_26.02","14701_30","15202_4.02","14401_7.01","14701_77","14601_2","14501_6.01",
+                    "14502_3.01","14501_6.02","10301_13","10301_15"
+                ]
+            }
+        };
+
+        // Build lookup: block_lot -> category key
+        const OPEN_SPACE_LOOKUP = {};
+        Object.keys(OPEN_SPACE_CATEGORIES).forEach(category => {
+            OPEN_SPACE_CATEGORIES[category].parcels.forEach(blockLot => {
+                OPEN_SPACE_LOOKUP[blockLot] = category;
+            });
+        });
+    </script>
+    <script>
+        // Initialize map centered on Long Hill Township
+        const map = L.map('map', {
+            center: [40.6970, -74.4870],
+            zoom: 13,
+            zoomControl: true
+        });
+
+        // Base layers
+        const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        });
+
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri'
+        });
+
+        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenTopoMap'
+        });
+
+        streets.addTo(map);
+
+        L.control.layers({
+            'Streets': streets,
+            'Satellite': satellite,
+            'Topographic': topo
+        }).addTo(map);
+
+        // Layers
+        let parcelsLayer = L.layerGroup().addTo(map);
+        let blockLabelsLayer = L.layerGroup().addTo(map);
+
+        // State
+        let allParcels = [];
+        let highlightedBlocks = new Set();
+        let activeOSCategories = new Set(Object.keys(OPEN_SPACE_CATEGORIES));
+
+        // Long Hill Township municipality code
+        const MUN_CODE = '1430';
+        const FEATURE_SERVICE_URL = 'https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest/services/Parcels_Composite_NJ_WM/FeatureServer/0';
+
+        // Build open space checkboxes
+        function buildOSCheckboxes() {
+            const container = document.getElementById('os-checkboxes');
+            Object.keys(OPEN_SPACE_CATEGORIES).forEach(key => {
+                const cat = OPEN_SPACE_CATEGORIES[key];
+                const label = document.createElement('label');
+                label.className = 'os-category-label';
+                label.innerHTML = `
+                    <input type="checkbox" checked data-os-category="${key}">
+                    <span class="os-swatch${cat.provisional ? ' provisional' : ''}" style="background:${cat.color}"></span>
+                    <span>${cat.label} (${cat.parcels.length})</span>
+                `;
+                label.querySelector('input').addEventListener('change', function() {
+                    if (this.checked) {
+                        activeOSCategories.add(key);
+                    } else {
+                        activeOSCategories.delete(key);
+                    }
+                    renderParcels();
+                });
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllOS(state) {
+            const checkboxes = document.querySelectorAll('[data-os-category]');
+            checkboxes.forEach(cb => {
+                cb.checked = state;
+                const key = cb.dataset.osCategory;
+                if (state) {
+                    activeOSCategories.add(key);
+                } else {
+                    activeOSCategories.delete(key);
+                }
+            });
+            renderParcels();
+        }
+
+        // Fetch parcels from ArcGIS REST API with retry logic
+        async function fetchWithRetry(url, retries = 3, delay = 2000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 30000);
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeout);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(r => setTimeout(r, delay * (i + 1)));
+                }
+            }
+        }
+
+        async function loadParcels() {
+            const statusBar = document.getElementById('status-bar');
+            let allFeatures = [];
+            let offset = 0;
+            const batchSize = 2000;
+            let hasMore = true;
+
+            while (hasMore) {
+                statusBar.innerHTML = `<span class="loading-spinner"></span> Loading parcels... (${allFeatures.length} loaded)`;
+                
+                const params = new URLSearchParams({
+                    where: `PCL_MUN = '${MUN_CODE}'`,
+                    outFields: 'PAMS_PIN,PCLBLOCK,PCLLOT,PCLQCODE,PCL_MUN,PROP_CLASS,PROP_LOC,OWNER_NAME,BLDG_DESC,LAND_DESC,CALC_ACRE,NET_VALUE,LAST_YR_TX,MUN_NAME',
+                    outSR: '4326',
+                    f: 'geojson',
+                    resultOffset: offset,
+                    resultRecordCount: batchSize
+                });
+
+                try {
+                    const data = await fetchWithRetry(`${FEATURE_SERVICE_URL}/query?${params}`);
+
+                    if (data.features && data.features.length > 0) {
+                        allFeatures = allFeatures.concat(data.features);
+                        offset += data.features.length;
+                        
+                        if (data.features.length < batchSize) {
+                            hasMore = false;
+                        }
+                    } else {
+                        hasMore = false;
+                    }
+                } catch (error) {
+                    console.error('Error fetching parcels:', error);
+                    statusBar.innerHTML = `⚠️ Error loading parcels. <button onclick="loadParcels()" style="margin-left:8px;padding:4px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Retry</button>`;
+                    return;
+                }
+            }
+
+            allParcels = allFeatures;
+            statusBar.textContent = `✓ ${allFeatures.length} parcels loaded`;
+            
+            renderParcels();
+            renderBlockLabels();
+
+            // Fit map to parcels
+            if (parcelsLayer.getLayers().length > 0) {
+                const bounds = L.featureGroup(parcelsLayer.getLayers()).getBounds();
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
+
+            setTimeout(() => {
+                statusBar.style.display = 'none';
+            }, 3000);
+        }
+
+        function getParcelOSCategory(feature) {
+            const block = feature.properties.PCLBLOCK;
+            const lot = feature.properties.PCLLOT;
+            if (!block || !lot) return null;
+            
+            const blockLot = `${block}_${lot}`;
+
+            // Inventory keys are plain block_lot (no qualifier suffix), and PCLBLOCK/PCLLOT
+            // carry the qualifier separately in PCLQCODE, so a direct lookup covers every case.
+            return OPEN_SPACE_LOOKUP[blockLot] || null;
+        }
+
+        function renderParcels() {
+            parcelsLayer.clearLayers();
+
+            const geoJsonLayer = L.geoJSON({
+                type: 'FeatureCollection',
+                features: allParcels
+            }, {
+                style: function(feature) {
+                    const block = feature.properties.PCLBLOCK;
+                    const isHighlighted = highlightedBlocks.has(block);
+                    const osCategory = getParcelOSCategory(feature);
+                    const osActive = osCategory && activeOSCategories.has(osCategory);
+
+                    if (isHighlighted) {
+                        return {
+                            color: '#dc2626',
+                            weight: 2.5,
+                            fillColor: 'rgba(255,69,0,0.5)',
+                            fillOpacity: 0.5
+                        };
+                    }
+                    
+                    if (osActive) {
+                        const cat = OPEN_SPACE_CATEGORIES[osCategory];
+                        return {
+                            color: cat.color,
+                            weight: cat.provisional ? 2.5 : 2,
+                            dashArray: cat.provisional ? '5,3' : null,
+                            fillColor: cat.color,
+                            fillOpacity: cat.provisional ? 0.3 : 0.45
+                        };
+                    }
+
+                    return {
+                        color: '#4682b4',
+                        weight: 0.5,
+                        fillColor: 'rgba(70,130,180,0.08)',
+                        fillOpacity: 0.2
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const p = feature.properties;
+                    const osCategory = getParcelOSCategory(feature);
+                    const osBadge = osCategory 
+                        ? `<span class="os-badge" style="background:${OPEN_SPACE_CATEGORIES[osCategory].color}">${OPEN_SPACE_CATEGORIES[osCategory].label}</span><br>` 
+                        : '';
+                    
+                    const popup = `
+                        <div class="popup-content">
+                            <strong>Block ${p.PCLBLOCK || 'N/A'} / Lot ${p.PCLLOT || 'N/A'}</strong>
+                            ${p.PCLQCODE ? ' (Qual: ' + p.PCLQCODE + ')' : ''}<br>
+                            ${osBadge}
+                            ${p.PROP_LOC ? '📍 ' + p.PROP_LOC + '<br>' : ''}
+                            ${p.OWNER_NAME ? '👤 ' + p.OWNER_NAME + '<br>' : ''}
+                            ${p.BLDG_DESC ? '🏠 ' + p.BLDG_DESC + '<br>' : ''}
+                            ${p.LAND_DESC ? '🌳 ' + p.LAND_DESC + '<br>' : ''}
+                            ${p.CALC_ACRE ? '📐 ' + Number(p.CALC_ACRE).toFixed(2) + ' acres<br>' : ''}
+                            ${p.PROP_CLASS ? '📋 Class: ' + p.PROP_CLASS + '<br>' : ''}
+                            ${p.NET_VALUE ? '💰 Value: $' + Number(p.NET_VALUE).toLocaleString() + '<br>' : ''}
+                            ${p.LAST_YR_TX ? '🧾 Taxes: $' + Number(p.LAST_YR_TX).toLocaleString() + '<br>' : ''}
+                        </div>
+                    `;
+                    layer.bindPopup(popup);
+                }
+            });
+
+            parcelsLayer.addLayer(geoJsonLayer);
+        }
+
+        function renderBlockLabels() {
+            blockLabelsLayer.clearLayers();
+
+            const blockGroups = {};
+            allParcels.forEach(feature => {
+                const block = feature.properties.PCLBLOCK;
+                if (!block) return;
+                if (!blockGroups[block]) {
+                    blockGroups[block] = [];
+                }
+                blockGroups[block].push(feature);
+            });
+
+            Object.keys(blockGroups).forEach(block => {
+                const features = blockGroups[block];
+                let totalLat = 0, totalLng = 0, count = 0;
+
+                features.forEach(f => {
+                    if (f.geometry && f.geometry.coordinates) {
+                        const coords = f.geometry.type === 'MultiPolygon' 
+                            ? f.geometry.coordinates[0][0] 
+                            : f.geometry.coordinates[0];
+                        if (coords) {
+                            coords.forEach(coord => {
+                                totalLng += coord[0];
+                                totalLat += coord[1];
+                                count++;
+                            });
+                        }
+                    }
+                });
+
+                if (count > 0) {
+                    const centroid = [totalLat / count, totalLng / count];
+                    const isHighlighted = highlightedBlocks.has(block);
+                    
+                    const icon = L.divIcon({
+                        className: 'block-label',
+                        html: `<div style="
+                            font-size: 9px;
+                            font-weight: ${isHighlighted ? 'bold' : 'normal'};
+                            color: ${isHighlighted ? '#dc2626' : '#1e3a5f'};
+                            text-shadow: 1px 1px 1px rgba(255,255,255,0.9);
+                            white-space: nowrap;
+                            background: ${isHighlighted ? 'rgba(255,220,220,0.85)' : 'rgba(255,255,255,0.5)'};
+                            padding: 1px 3px;
+                            border-radius: 2px;
+                        ">${block}</div>`,
+                        iconSize: [0, 0],
+                        iconAnchor: [0, 0]
+                    });
+
+                    L.marker(centroid, { icon: icon }).addTo(blockLabelsLayer);
+                }
+            });
+        }
+
+        // Highlight functions
+        function highlightBlocks() {
+            const input = document.getElementById('block-input').value;
+            const blocks = input.split(/[\s,]+/).map(b => b.trim()).filter(b => b.length > 0);
+            
+            highlightedBlocks = new Set(blocks);
+            renderParcels();
+            renderBlockLabels();
+
+            if (highlightedBlocks.size > 0) {
+                const highlightedFeatures = allParcels.filter(f => highlightedBlocks.has(f.properties.PCLBLOCK));
+                if (highlightedFeatures.length > 0) {
+                    const tempLayer = L.geoJSON({
+                        type: 'FeatureCollection',
+                        features: highlightedFeatures
+                    });
+                    map.fitBounds(tempLayer.getBounds(), { padding: [50, 50] });
+                }
+            }
+
+            showStatus(`✓ ${highlightedBlocks.size} block(s) highlighted`);
+        }
+
+        function clearHighlights() {
+            highlightedBlocks.clear();
+            document.getElementById('block-input').value = '';
+            renderParcels();
+            renderBlockLabels();
+            showStatus('✓ Highlights cleared');
+        }
+
+        function showStatus(msg) {
+            const statusBar = document.getElementById('status-bar');
+            statusBar.style.display = 'block';
+            statusBar.textContent = msg;
+            setTimeout(() => { statusBar.style.display = 'none'; }, 3000);
+        }
+
+        // Layer toggles
+        document.getElementById('toggle-parcels').addEventListener('change', function() {
+            if (this.checked) {
+                map.addLayer(parcelsLayer);
+            } else {
+                map.removeLayer(parcelsLayer);
+            }
+        });
+
+        document.getElementById('toggle-blocks').addEventListener('change', function() {
+            if (this.checked) {
+                map.addLayer(blockLabelsLayer);
+            } else {
+                map.removeLayer(blockLabelsLayer);
+            }
+        });
+
+        // Init
+        buildOSCheckboxes();
+        loadParcels();
+    </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Space Block Expander</title>
+<style>
+ *{margin:0;padding:0;box-sizing:border-box}
+ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      padding:24px;max-width:1080px;margin:0 auto;background:#fbfbfa;color:#1a1a1a}
+ h1{font-size:20px;margin-bottom:4px}
+ .sub{font-size:13px;color:#666;margin-bottom:20px}
+ .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+ input{flex:1;min-width:260px;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font:inherit;font-size:13px}
+ button{padding:8px 16px;border:1px solid #2563eb;background:#2563eb;color:#fff;
+        border-radius:5px;cursor:pointer;font-size:13px}
+ button:hover{background:#1d4ed8}
+ button.sec{background:#fff;color:#2563eb}
+ button.sec:hover{background:#eff4ff}
+ #status{font-size:13px;color:#555;margin-bottom:14px}
+ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:8px}
+ th{text-align:left;padding:6px 8px;border-bottom:2px solid #ddd;color:#555;font-size:11px;
+    text-transform:uppercase;letter-spacing:.04em}
+ td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:top}
+ td.lot{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+ tr.missing{background:#fff4e5}
+ tr.missing td.lot{font-weight:700}
+ .tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:600}
+ .t-in{background:#d8f3dc;color:#1b4332}
+ .t-out{background:#ffd6a5;color:#7c4a03}
+ .t-priv{background:#eee;color:#666}
+ h2{font-size:14px;margin:26px 0 8px;padding-bottom:5px;border-bottom:1px solid #ddd}
+ pre{background:#1e1e1e;color:#d4d4d4;padding:14px;border-radius:6px;font-size:12px;
+     overflow-x:auto;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+ .note{font-size:12px;color:#666;line-height:1.6;margin-top:8px}
+ .blk{margin-bottom:22px}
+ .blkhead{font-size:13px;font-weight:700;margin-bottom:4px}
+</style>
+</head>
+<body>
+<h1>Open Space Block Expander</h1>
+<div class="sub">Lists every lot the NJ parcel service holds for a block, and flags the
+township-owned ones missing from your inventory. Long Hill Township (MUN 1430).</div>
+
+<div class="bar">
+  <input id="blocks" value="10403 10404 10405 10406 10407 10408 10409 10505 10506 10507">
+  <button onclick="run()">Look up</button>
+  <button class="sec" onclick="document.getElementById('blocks').value='10403 10404 10405 10406 10407 10408 10409 10505 10506 10507';run()">Reset to critique blocks</button>
+</div>
+<div id="status">Ready.</div>
+<div id="out"></div>
+
+<h2>Paste-ready inventory entries</h2>
+<div class="note">Township-owned lots (class 15C / owner names matching the township) found in
+these blocks but <b>absent</b> from your current inventory. Critique items 30–33 call these
+blocks wetland/floodplain, so these are the candidates for
+<code>Town — Wetland/Floodplain</code>. Review before pasting — ownership strings are fuzzy.</div>
+<pre id="emit">(run a lookup)</pre>
+
+<script>
+const SVC='https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest/services/Parcels_Composite_NJ_WM/FeatureServer/0';
+const INV={"15201_2": "Federal", "15201_3": "Federal", "14501_12": "Federal", "14401_8": "Federal", "14401_7.02": "Federal", "14501_3": "Federal", "14501_4": "Federal", "15201_1": "Federal", "14501_16": "Federal", "14501_14": "Federal", "14501_13": "Federal", "14501_10": "Federal", "14501_11": "Federal", "14501_8.01": "Federal", "14501_6": "Federal", "14501_5": "Federal", "14501_5.01": "Federal", "14501_2": "Federal", "14401_7.03": "Federal", "14401_5": "Federal", "14401_3": "Federal", "14401_2": "Federal", "14401_1": "Federal", "12801_6.14": "Federal", "12801_8": "Federal", "12803_35": "Federal", "14801_8": "Federal", "14801_22": "Federal", "15101_6": "Federal", "15101_9": "Federal", "15101_7": "Federal", "15101_8": "Federal", "14901_3": "Federal", "14901_1": "Federal", "14901_2": "Federal", "14901_1.01": "Federal", "15001_3.07": "Federal", "15001_3.06": "Federal", "15001_3.01": "Federal", "15001_3": "Federal", "15001_1": "Federal", "15001_2": "Federal", "14901_7": "Federal", "14901_5": "Federal", "15001_5": "Federal", "15001_4": "Federal", "14801_24": "Federal", "15101_5": "Federal", "15101_4": "Federal", "14701_39": "Federal", "14701_26": "Federal", "14602_19": "Federal", "14602_5": "Federal", "14602_5.01": "Federal", "14602_3": "Federal", "14101_6": "Federal", "14101_7": "Federal", "14701_31.01": "Federal", "14701_75": "Federal", "14701_32": "Federal", "14701_76": "Federal", "14602_2": "Federal", "15202_3.03": "Federal", "15202_1": "Federal", "15202_2": "Federal", "14301_3": "Federal", "14101_62": "Federal", "14101_60": "Federal", "14101_17.2": "Federal", "14101_53": "Federal", "14101_52": "Federal", "14101_54": "Federal", "14101_61": "Federal", "15202_8": "Federal", "15202_7": "Federal", "15101_2": "Federal", "15101_1": "Federal", "15202_6.02": "Federal", "15202_6.03": "Federal", "15202_6.01": "Federal", "15202_6": "Federal", "15202_5": "Federal", "14701_38": "Federal", "15202_4": "Federal", "14701_37": "Federal", "15202_3.10": "Federal", "15202_3.01": "Federal", "14701_35.02": "Federal", "15202_3.06": "Federal", "14701_78": "Federal", "14601_3": "Federal", "14601_5": "Federal", "14502_5": "Federal", "14502_5.01": "Federal", "14502_4": "Federal", "14502_4.01": "Federal", "14502_3.02": "Federal", "14502_1": "Federal", "14301_1": "Federal", "14301_2": "Federal", "12801_9.05": "Federal", "15101_3": "Federal", "10201_6.05": "State", "14701_30.03": "State", "10201_10.21": "County", "10301_12.04": "County", "13501_10": "County", "13406_26": "County", "12202_1": "County", "12202_9": "County", "12202_7": "County", "10101_18": "County", "10301_16.02": "County", "10301_16": "County", "10101_21": "County", "10201_10.22": "County", "10201_10.23": "County", "10101_20": "County", "13002_1": "School", "12901_4.01": "School", "10701_3": "School", "10509_1": "Town — Parks & Rec", "13108_7": "Town — Parks & Rec", "10508_1": "Town — Parks & Rec", "13102_20": "Town — Parks & Rec", "10511_1": "Town — Parks & Rec", "13104_1": "Town — Parks & Rec", "13105_23": "Town — Parks & Rec", "14602_9": "Town — Parks & Rec", "10510_1": "Town — Parks & Rec", "10601_10": "Town — Parks & Rec", "12901_4": "Town — Parks & Rec", "11301_1": "Town — Parks & Rec", "11301_2": "Town — Parks & Rec", "11301_3": "Town — Parks & Rec", "12702_47.10": "Town — Open Space", "13407_15": "Town — Open Space", "13404_37": "Town — Open Space", "13701_23": "Town — Open Space", "10202_8": "Town — Open Space", "13301_1": "Town — Open Space", "13201_1": "Town — Open Space", "13607_40": "Town — Open Space", "13404_25": "Town — Open Space", "13402_5": "Town — Open Space", "13406_39": "Town — Open Space", "13404_15": "Town — Open Space", "10402_54": "Town — Open Space", "10402_8": "Town — Open Space", "11202_13": "Town — Open Space", "11203_15.01": "Town — Open Space", "11202_1": "Town — Open Space", "11203_16": "Town — Open Space", "11609_7.01": "Town — Open Space", "13403_36": "Town — Open Space", "13501_13": "Town — Open Space", "13603_6": "Town — Open Space", "13603_3": "Town — Open Space", "13501_7": "Town — Open Space", "13402_1.03": "Town — Open Space", "10502_9": "Town — Open Space", "10503_5": "Town — Open Space", "11513_12": "Town — Open Space", "11611_9.01": "Town — Open Space", "13515_16": "Town — Open Space", "13516_25": "Town — Open Space", "13501_11": "Town — Open Space", "11610_8.01": "Town — Open Space", "13404_38.01": "Town — Open Space", "12402_11": "Town — Open Space", "11506_5": "Town — Open Space", "11802_20.01": "Town — Open Space", "10410_1": "Town — Open Space", "11611_13": "Town — Open Space", "13511_6": "Town — Open Space", "13511_2": "Town — Open Space", "13515_35": "Town — Open Space", "13517_1": "Town — Open Space", "13507_9": "Town — Open Space", "10910_1": "Town — Open Space", "14701_36": "Town — Open Space", "14401_5.02": "Town — Open Space", "14205_4.02": "Town — Open Space", "11803_10.01": "Town — Open Space", "11804_10": "Town — Open Space", "13512_21": "Town — Open Space", "13703_6": "Town — Open Space", "13702_5": "Town — Open Space", "11608_6": "Town — Open Space", "11001_23.01": "Town — Open Space", "12004_12": "Town — Open Space", "10411_6": "Town — Open Space", "13103_1": "Town — Open Space", "13103_35": "Town — Open Space", "13103_43": "Town — Open Space", "12305_1": "Town — Other", "10504_11": "Exempt Private", "10505_4": "Exempt Private", "10701_23": "Exempt Private", "12101_3": "Community Association", "10105_17": "Community Association", "10106_10": "Community Association", "12201_4": "Community Association", "11510_4": "Community Association", "10701_22.01": "Community Association", "10106_16": "Community Association", "10106_43": "Community Association", "13302_19.01": "Community Association", "10702_1": "Community Association", "10701_2": "Community Association", "10908_4": "Community Association", "10301_16.05": "Community Association", "13302_19.02": "Community Association", "10101_22": "Utility ROW", "13908_15.01": "Utility ROW", "14901_11.01": "Utility ROW", "14801_15": "Utility ROW", "11509_6": "Utility ROW", "10403_1": "Utility ROW", "10301_26.02": "Utility ROW", "10301_25.01": "Utility ROW", "10301_24.01": "Utility ROW", "10301_16.01": "Utility ROW", "11001_23.03": "Utility ROW", "11001_32": "Utility ROW", "11001_32.01": "Utility ROW", "13406_21": "Utility ROW", "11001_35": "Utility ROW", "11401_17": "Utility ROW", "11401_16.01": "Utility ROW", "11401_16": "Utility ROW", "11401_15": "Utility ROW", "11401_22": "Utility ROW", "11501_2": "Utility ROW", "10411_3": "Utility ROW", "10411_2": "Utility ROW", "10301_14": "Utility ROW", "14801_18": "Cemetery", "12901_71": "Cemetery", "12901_70": "Cemetery", "12901_69": "Cemetery", "12806_6": "Farm Land", "12806_6.02": "Farm Land", "13607_42": "Farm Land", "13607_41": "Farm Land", "13701_32": "Farm Land", "14901_10.01": "Farm Land", "14901_11": "Farm Land", "13701_31.01": "Farm Land", "13701_31": "Farm Land", "14801_1": "Farm Land", "14801_2": "Farm Land", "14801_23": "Farm Land", "14701_24": "Farm Land", "14701_25": "Farm Land", "14701_25.01": "Farm Land", "14602_5.02": "Farm Land", "15202_3.02": "Farm Land", "11706_1": "Farm Land", "11706_21": "Farm Land", "11705_1": "Farm Land", "11608_10": "Farm Land", "11704_1": "Farm Land", "11609_1": "Farm Land", "10301_9": "Farm Land", "14701_35.01": "Farm Land", "14701_79": "Farm Land", "14501_6.05": "Farm Land", "10503_8": "Town — Blue Acres", "10504_8": "Town — Blue Acres", "11601_10": "Town — Blue Acres", "11601_9": "Town — Blue Acres", "11601_8": "Town — Blue Acres", "11602_28": "Town — Blue Acres", "11204_26": "Town — Blue Acres", "10409_4": "Private Vacant", "10409_2": "Private Vacant", "10408_3": "Private Vacant", "10405_5": "Private Vacant", "10405_4": "Private Vacant", "14101_52.01": "Private Vacant", "10504_13": "Private Vacant", "10504_10": "Private Vacant", "13302_16.01": "Private Vacant", "13514_1": "Private Vacant", "13501_12": "Private Vacant", "10403_42": "Private Vacant", "10504_3": "Private Vacant", "14101_63": "Private Vacant", "10511_5": "Private Vacant", "13515_19": "Private Vacant", "13512_30": "Private Vacant", "13515_13": "Private Vacant", "13515_10": "Private Vacant", "13515_7": "Private Vacant", "13511_1": "Private Vacant", "13516_26": "Private Vacant", "11502_1": "Private Vacant", "11513_10": "Private Vacant", "11104_18": "Private Vacant", "11104_16": "Private Vacant", "11104_14": "Private Vacant", "11104_11": "Private Vacant", "11104_8": "Private Vacant", "11104_4": "Private Vacant", "13508_20": "Private Vacant", "10906_5": "Private Vacant", "10903_6": "Private Vacant", "10904_1": "Private Vacant", "10905_1": "Private Vacant", "10903_9": "Private Vacant", "10903_21": "Private Vacant", "10903_13": "Private Vacant", "11509_19": "Private Vacant", "11509_22": "Private Vacant", "11509_24": "Private Vacant", "11510_6": "Private Vacant", "11509_25": "Private Vacant", "10402_9": "Private Vacant", "10402_7": "Private Vacant", "10402_5": "Private Vacant", "10402_3": "Private Vacant", "10402_1": "Private Vacant", "10402_4": "Private Vacant", "10301_26.01": "Private Vacant", "10405_2": "Private Vacant", "10406_6": "Private Vacant", "11609_10": "Private Vacant", "11704_15": "Private Vacant", "11610_1": "Private Vacant", "11703_1": "Private Vacant", "11610_10": "Private Vacant", "11611_1": "Private Vacant", "11702_15": "Private Vacant", "13510_20.01": "Private Vacant", "13511_27": "Private Vacant", "13511_11": "Private Vacant", "13510_18": "Private Vacant", "13511_9": "Private Vacant", "13508_12": "Private Vacant", "13515_30": "Private Vacant", "11401_23": "Private Vacant", "14602_8": "Private Vacant", "14602_4.01": "Private Vacant", "11510_7": "Private Vacant", "11605_14": "Private Vacant", "11508_10": "Private Vacant", "12201_5": "Private Vacant", "10801_4": "Private Vacant", "11504_1": "Town — Wetland/Floodplain", "11507_4.01": "Town — Wetland/Floodplain", "11507_4.02": "Town — Wetland/Floodplain", "10201_10.14": "Town — Wetland/Floodplain", "10701_4": "Town — Wetland/Floodplain", "10801_5": "Town — Wetland/Floodplain", "11401_5": "Town — Wetland/Floodplain", "11503_3": "Town — Wetland/Floodplain", "11505_1": "Town — Wetland/Floodplain", "11802_1": "Town — Wetland/Floodplain", "12203_4": "Town — Wetland/Floodplain", "12701_9": "Town — Wetland/Floodplain", "12904_7": "Town — Wetland/Floodplain", "10403_21": "Town — Wetland/Floodplain", "10404_1": "Town — Wetland/Floodplain", "10405_1": "Town — Wetland/Floodplain", "10405_3": "Town — Wetland/Floodplain", "10406_1": "Town — Wetland/Floodplain", "10407_1": "Town — Wetland/Floodplain", "10407_2": "Town — Wetland/Floodplain", "10408_1": "Town — Wetland/Floodplain", "10409_1": "Town — Wetland/Floodplain", "10505_1": "Town — Wetland/Floodplain", "10505_2": "Town — Wetland/Floodplain", "10506_1": "Town — Wetland/Floodplain", "10507_1": "Town — Wetland/Floodplain", "12901_60": "Town — Detention Basin", "12203_32": "Town — Detention Basin", "13204_11": "Town — Detention Basin", "13205_15": "Town — Upland Open Space", "12301_3": "Town — Unbuildable Open Space", "12306_1": "Town — Unbuildable Open Space", "14701_26.02": "For OSAC Review", "14701_30": "For OSAC Review", "15202_4.02": "For OSAC Review", "14401_7.01": "For OSAC Review", "14701_77": "For OSAC Review", "14601_2": "For OSAC Review", "14501_6.01": "For OSAC Review", "14502_3.01": "For OSAC Review", "14501_6.02": "For OSAC Review", "10301_13": "For OSAC Review", "10301_15": "For OSAC Review"};
+const isTown=o=>/TOWNSHIP|TWP|LONG HILL|BOROUGH|BORO/i.test(o||'');
+
+async function fetchBlock(b){
+  const p=new URLSearchParams({where:`PCL_MUN='1430' AND PCLBLOCK='${b}'`,
+    outFields:'PCLBLOCK,PCLLOT,OWNER_NAME,PROP_LOC,PROP_CLASS,CALC_ACRE',
+    returnGeometry:'false',outSR:'4326',f:'json'});
+  const r=await fetch(`${SVC}/query?${p}`);
+  if(!r.ok) throw new Error(`HTTP ${r.status} on block ${b}`);
+  const j=await r.json();
+  if(j.error) throw new Error(j.error.message||'service error');
+  return (j.features||[]).map(f=>f.attributes);
+}
+
+async function run(){
+  const blocks=document.getElementById('blocks').value.split(/[\s,]+/).filter(Boolean);
+  const out=document.getElementById('out'), st=document.getElementById('status');
+  out.innerHTML=''; const emit=[];
+  for(const b of blocks){
+    st.textContent=`Querying block ${b}…`;
+    let rows;
+    try{ rows=await fetchBlock(b); }
+    catch(e){ out.insertAdjacentHTML('beforeend',
+      `<div class="blk"><div class="blkhead">Block ${b}</div>
+       <div class="note" style="color:#b91c1c">Failed: ${e.message}</div></div>`); continue; }
+    rows.sort((x,y)=>String(x.PCLLOT).localeCompare(String(y.PCLLOT),undefined,{numeric:true}));
+    let html=`<div class="blk"><div class="blkhead">Block ${b} — ${rows.length} lots</div>
+      <table><thead><tr><th>Lot</th><th>Owner</th><th>Class</th><th>Acres</th>
+      <th>In inventory?</th></tr></thead><tbody>`;
+    for(const a of rows){
+      const lot=String(a.PCLLOT??'').trim(), id=`${b}_${lot}`;
+      const cat=INV[id], town=isTown(a.OWNER_NAME);
+      let tag,cls='';
+      if(cat)            tag=`<span class="tag t-in">${cat}</span>`;
+      else if(town){     tag=`<span class="tag t-out">township — MISSING</span>`; cls='missing';
+                         emit.push(`"${id}",  // ${(a.OWNER_NAME||'').trim()} · ${a.CALC_ACRE?Number(a.CALC_ACRE).toFixed(2)+' ac':''}`); }
+      else               tag=`<span class="tag t-priv">private — n/a</span>`;
+      html+=`<tr class="${cls}"><td class="lot">${lot}</td><td>${(a.OWNER_NAME||'').slice(0,34)}</td>
+        <td>${a.PROP_CLASS||''}</td><td>${a.CALC_ACRE?Number(a.CALC_ACRE).toFixed(2):''}</td><td>${tag}</td></tr>`;
+    }
+    out.insertAdjacentHTML('beforeend', html+'</tbody></table></div>');
+  }
+  st.textContent=`Done — ${blocks.length} block(s).`;
+  document.getElementById('emit').textContent = emit.length
+    ? emit.join('\n')
+    : 'No township-owned lots missing from the inventory in these blocks.';
+}
+run();
+</script>
+</body>
+</html>

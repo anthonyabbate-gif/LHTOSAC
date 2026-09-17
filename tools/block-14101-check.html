@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block 14101 — Lot 17.02 Check</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;height:100vh}
+  #map{flex:1;height:100vh}
+  #side{width:380px;padding:18px;overflow-y:auto;background:#fafafa;border-left:1px solid #ddd}
+  h1{font-size:17px;margin-bottom:4px}
+  .sub{font-size:12px;color:#666;margin-bottom:16px}
+  h2{font-size:13px;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+  .verdict{padding:12px;border-radius:6px;font-size:13px;line-height:1.5;margin-bottom:8px}
+  .v-wait{background:#eef2f7;color:#334}
+  .v-yes{background:#d8f3dc;color:#1b4332;border-left:4px solid #2d6a4f}
+  .v-no{background:#ffe5e5;color:#7f1d1d;border-left:4px solid #dc2626}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+  th,td{text-align:left;padding:4px 6px;border-bottom:1px solid #e5e5e5}
+  th{color:#666;font-weight:600}
+  td.lot{font-family:ui-monospace,Menlo,monospace}
+  tr.hit td{background:#d8f3dc;font-weight:600}
+  .legend{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
+  .sw{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+  .note{font-size:11px;color:#666;line-height:1.5;margin-top:10px}
+  button{margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;width:100%}
+  button:hover{background:#f0f0f0}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="side">
+  <h1>Block 14101 — Lot 17.02</h1>
+  <div class="sub">Long Hill Township (MUN 1430) · live from NJ parcel service</div>
+
+  <h2>Verdict</h2>
+  <div id="verdict" class="verdict v-wait">Querying the parcel service…</div>
+
+  <h2>Legend</h2>
+  <div class="legend"><span class="sw" style="background:#2d6a4f"></span> The lot in question (Federal green)</div>
+  <div class="legend"><span class="sw" style="background:#4682b4;opacity:.35"></span> Other lots in block 14101</div>
+  <div class="legend"><span class="sw" style="background:#2d6a4f;opacity:.45"></span> Other Federal parcels nearby</div>
+
+  <h2>Every lot the service returns for block 14101</h2>
+  <table id="lots"><thead><tr><th>Lot</th><th>Owner</th><th>Acres</th></tr></thead><tbody></tbody></table>
+
+  <button onclick="fit()">Re-zoom to the lot</button>
+  <div class="note">
+    Your inventory lists <code>14101_17.2</code>. If the service returns
+    <code>17.02</code>, the inventory entry never matches and the parcel renders
+    uncoloured. The table above is the authoritative answer.
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SVC='https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest/services/Parcels_Composite_NJ_WM/FeatureServer/0';
+const map=L.map('map').setView([40.6970,-74.4870],14);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {attribution:'© Esri',maxZoom:19}).addTo(map);
+let target=null;
+
+const q=p=>`${SVC}/query?`+new URLSearchParams({...p,outSR:'4326',f:'geojson'});
+
+async function run(){
+  const r=await fetch(q({where:"PCL_MUN='1430' AND PCLBLOCK='14101'",
+    outFields:'PCLBLOCK,PCLLOT,PCLQCODE,OWNER_NAME,PROP_LOC,CALC_ACRE,PROP_CLASS'}));
+  const gj=await r.json();
+  const feats=gj.features||[];
+  const lots=feats.map(f=>String(f.properties.PCLLOT??'').trim());
+
+  // Which spelling does the service actually use?
+  const has1702=lots.includes('17.02'), has172=lots.includes('17.2');
+  const actual=has1702?'17.02':has172?'17.2':null;
+
+  const v=document.getElementById('verdict');
+  if(actual==='17.02'){
+    v.className='verdict v-yes';
+    v.innerHTML='<b>Confirmed.</b> The service spells this lot <code>17.02</code>. '+
+      'Your inventory\'s <code>14101_17.2</code> never matches, so the parcel is '+
+      'currently drawn as an ordinary uncoloured parcel. Changing the inventory to '+
+      '<code>14101_17.02</code> colours it Federal — shown in green on the map.';
+  } else if(actual==='17.2'){
+    v.className='verdict v-no';
+    v.innerHTML='<b>No change needed.</b> The service really does spell it <code>17.2</code>, '+
+      'matching your inventory. My earlier suspicion was wrong — leave the entry alone.';
+  } else {
+    v.className='verdict v-no';
+    v.innerHTML='<b>Lot 17 not found in block 14101.</b> The service returned '+feats.length+
+      ' lots and none is 17.02 or 17.2. See the table — the entry may reference a retired lot number.';
+  }
+
+  const tb=document.querySelector('#lots tbody');
+  feats.slice().sort((a,b)=>String(a.properties.PCLLOT).localeCompare(String(b.properties.PCLLOT),undefined,{numeric:true}))
+   .forEach(f=>{
+    const p=f.properties,lot=String(p.PCLLOT??'').trim(),hit=(lot===actual);
+    const tr=document.createElement('tr'); if(hit)tr.className='hit';
+    tr.innerHTML=`<td class="lot">${lot}</td><td>${(p.OWNER_NAME||'').slice(0,26)}</td>`+
+                 `<td>${p.CALC_ACRE?Number(p.CALC_ACRE).toFixed(1):''}</td>`;
+    tb.appendChild(tr);
+  });
+
+  L.geoJSON(gj,{style:f=>{
+    const hit=String(f.properties.PCLLOT??'').trim()===actual;
+    return hit?{color:'#2d6a4f',weight:3,fillColor:'#2d6a4f',fillOpacity:.55}
+              :{color:'#4682b4',weight:1,fillColor:'#4682b4',fillOpacity:.12};
+  },onEachFeature:(f,l)=>{
+    const p=f.properties;
+    l.bindPopup(`<b>Block ${p.PCLBLOCK} / Lot ${p.PCLLOT}</b><br>${p.OWNER_NAME||''}<br>`+
+                `${p.PROP_LOC||''}<br>${p.CALC_ACRE?Number(p.CALC_ACRE).toFixed(2)+' acres':''}`);
+    if(String(p.PCLLOT??'').trim()===actual){
+      target=l;
+      l.bindTooltip(`Block 14101 / Lot ${p.PCLLOT} — Federal`,
+        {permanent:true,direction:'top',className:'lbl'}).openTooltip();
+    }
+  }}).addTo(map);
+
+  fit();
+}
+function fit(){
+  if(target) map.fitBounds(target.getBounds().pad(2.0));
+}
+run().catch(e=>{
+  document.getElementById('verdict').className='verdict v-no';
+  document.getElementById('verdict').textContent='Could not reach the parcel service: '+e.message;
+});
+</script>
+</body>
+</html>
