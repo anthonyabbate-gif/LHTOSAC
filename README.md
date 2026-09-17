@@ -25,6 +25,10 @@ dashed outline — they are parked for OSAC review rather than settled classific
 
 - **`14101_17.2`** — the lot-number spelling was queried against the parcel service
   and deliberately left as-is. Not an outstanding item.
+- **Whole-block rows (items 30–33)** — "10403-10409 all", "10506 all", "10507 all".
+  The township-owned lots already inventoried in those blocks were moved to
+  Wetland/Floodplain, and that was reviewed against the parcel service and found
+  complete. No further lots to enumerate.
 
 ### Unresolved
 
@@ -35,10 +39,6 @@ dashed outline — they are parked for OSAC review rather than settled classific
 - **Schools (items 20–23)** — the open question is how to score partial open-space
   acreage per General Note 2B. A data-table issue, not a map recolour, so the map is
   unchanged.
-- **Whole-block rows (items 30–33)** — "10403-10409 all", "10506 all", "10507 all".
-  Township-owned lots already inventoried in those blocks were moved to
-  Wetland/Floodplain; any not yet inventoried remain unenumerated. Use the block
-  expander to list them.
 
 ## Data source
 
