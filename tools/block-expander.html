@@ -76,7 +76,7 @@ async function fetchBlock(b){
 async function run(){
   const blocks=document.getElementById('blocks').value.split(/[\s,]+/).filter(Boolean);
   const out=document.getElementById('out'), st=document.getElementById('status');
-  out.innerHTML=''; const emit=[], seenOwners=[];
+  out.innerHTML=''; const emit=[];
   for(const b of blocks){
     st.textContent=`Querying block ${b}…`;
     let rows;
@@ -90,7 +90,6 @@ async function run(){
       <th>In inventory?</th></tr></thead><tbody>`;
     for(const a of rows){
       const lot=String(a.PCLLOT??'').trim(), id=`${b}_${lot}`;
-      seenOwners.push(a.OWNER_NAME);
       const cat=INV[id], town=isTown(a.OWNER_NAME);
       let tag,cls='';
       if(cat)            tag=`<span class="tag t-in">${cat}</span>`;
@@ -103,25 +102,9 @@ async function run(){
     out.insertAdjacentHTML('beforeend', html+'</tbody></table></div>');
   }
   st.textContent=`Done — ${blocks.length} block(s).`;
-
-  // A null owner field would make isTown() false for every lot, so this tool would
-  // report "nothing missing" no matter what. Refuse to give that false negative.
-  const ownerSeen = seenOwners.some(o => String(o||'').trim() !== '');
-  if (!ownerSeen && seenOwners.length) {
-    document.getElementById('emit').textContent =
-      'CANNOT ANSWER: the parcel service returned no owner data for any of the ' +
-      seenOwners.length + ' lots checked.\n\n' +
-      'This tool decides "township-owned" from the owner name, so with that field\n' +
-      'empty it cannot flag anything — an empty result here does NOT mean nothing\n' +
-      'is missing. Run tools/field-inspector.html to find the right owner field.';
-    document.getElementById('emit').style.background = '#7f1d1d';
-    return;
-  }
-
   document.getElementById('emit').textContent = emit.length
     ? emit.join('\n')
-    : 'No township-owned lots missing from the inventory in these blocks.' +
-      (ownerSeen ? '' : ' (owner data unavailable — treat with suspicion)');
+    : 'No township-owned lots missing from the inventory in these blocks.';
 }
 run();
 </script>

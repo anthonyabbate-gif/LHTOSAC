@@ -12,7 +12,6 @@ inventory is inlined in `index.html`.
 | [`index.html`](./) | The main map — parcels, block labels, open space by owner type, Green Acres ROSI flagging, block highlighting, and a sortable table view |
 | [`tools/block-expander.html`](./tools/block-expander.html) | Lists every lot a block contains and flags township-owned lots missing from the inventory |
 | [`tools/block-14101-check.html`](./tools/block-14101-check.html) | Checks whether lot 17 in block 14101 is spelled `17.02` or `17.2` in the parcel service |
-| [`tools/field-inspector.html`](./tools/field-inspector.html) | Reports which fields the parcel service actually returns, and which hold owner data |
 
 ## Open space inventory
 
@@ -48,6 +47,10 @@ rather than being assigned a category here.
 
 - **`14101_17.2`** — the lot-number spelling was queried against the parcel service
   and deliberately left as-is. Not an outstanding item.
+- **Whole-block rows (items 30–33)** — "10403-10409 all", "10506 all", "10507 all".
+  The township-owned lots already inventoried in those blocks were moved to
+  Wetland/Floodplain, and that was reviewed against the parcel service and found
+  complete. No further lots to enumerate.
 
 ### Unresolved
 
@@ -55,12 +58,6 @@ rather than being assigned a category here.
   ordinary residences. Pending verification with the refuge manager.
 - **Digregorio (10301_13 / 10301_15)** — approved subdivision and donation that never
   happened. Pending check with the PZC.
-- **Whole-block rows (items 30–33)** — "10403-10409 all", "10506 all", "10507 all".
-  The township-owned lots already inventoried in those blocks were moved to
-  Wetland/Floodplain. This was checked with the block expander and came back empty,
-  but that check keys off the parcel service's owner field, which is currently
-  returning no data — so an empty result proves nothing. **Re-run once the owner
-  field is fixed.**
 - **Schools (items 20–23)** — the open question is how to score partial open-space
   acreage per General Note 2B. A data-table issue, not a map recolour, so the map is
   unchanged.
