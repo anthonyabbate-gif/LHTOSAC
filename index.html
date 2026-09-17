@@ -72,6 +72,14 @@
             border-radius: 2px;
             flex-shrink: 0;
         }
+        .rosi-key {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2.5px solid #b8860b;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
         .os-swatch.provisional {
             outline: 1.5px dashed #333;
             outline-offset: 1px;
@@ -264,6 +272,7 @@
         #parcel-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
         #parcel-table tbody tr { cursor: pointer; }
         #parcel-table tbody tr:hover { background: #eff4ff; }
+        .rosi-tick { color: #b8860b; margin-right: 4px; }
         .cat-dot {
             display: inline-block;
             width: 8px;
@@ -319,6 +328,11 @@
             <input type="checkbox" id="toggle-blocks" checked>
             Block Numbers
         </label>
+        <label title="Green Acres ROSI parcels cannot be diverted without NJDEP approval">
+            <input type="checkbox" id="toggle-rosi" checked>
+            <span class="rosi-key"></span>
+            Outline ROSI parcels (<span id="rosi-count">0</span>)
+        </label>
 
         <div class="section">
             <h3>Open Space — by Owner Type</h3>
@@ -342,6 +356,7 @@
             <div class="table-controls">
                 <input type="text" id="table-search" placeholder="Search block, lot, owner, address&hellip;">
                 <label class="tiny"><input type="checkbox" id="table-os-only" checked> Open space only</label>
+                <label class="tiny"><input type="checkbox" id="table-rosi-only"> ROSI only</label>
             </div>
             <div class="table-meta" id="table-meta"></div>
             <div class="table-scroll">
@@ -560,10 +575,120 @@
                 provisional: true,
                 parcels: [
                     "14701_26.02","14701_30","15202_4.02","14401_7.01","14701_77","14601_2","14501_6.01",
-                    "14502_3.01","14501_6.02","10301_13","10301_15"
+                    "14502_3.01","14501_6.02","10301_13","10301_15",
+                    // On the Feb 2014 Green Acres ROSI but absent from the 2013 open space
+                    // inventory. Green Acres encumbrance means these cannot be diverted, so
+                    // the omission is a discrepancy for the committee to resolve rather than
+                    // a classification call to make here.
+                    "13102_1","10201_10.15","11802_8.02","13702_6"
                 ]
             }
         };
+
+
+        // ------------------------------------------------------------------
+        // Green Acres ROSI (Recreation and Open Space Inventory), Feb 2014.
+        // Source: Long_Hill_ROSI_Feb_2014_current1.xlsx, pages 4 and 4A (fee simple).
+        // The conservation-restriction and lease pages of that workbook are empty,
+        // and the block/lot change log has no entries, so fee simple is the whole list.
+        //
+        // ROSI listing is an ENCUMBRANCE, not an ownership category: a parcel can sit
+        // in any category above AND be on the ROSI. Land on this list cannot be
+        // diverted or disposed of without NJDEP Green Acres approval, so it is held
+        // here as a separate flag rather than as a category.
+        //
+        // Keys are normalised block_Number(lot) so that ROSI's "47.1" matches the
+        // inventory's "47.10". `ga` is Green Acres encumbered acres, which is less
+        // than `acres` where only part of the lot is encumbered (`partial`).
+        const ROSI_PARCELS = {
+            "10201_10.15": { park:"Heritage Road", loc:"Heritage Road", acres:9.44, ga:9.44 },
+            "10402_8": { park:"", loc:"Elizabeth Street", acres:0.09, ga:0.09 },
+            "10402_54": { park:"", loc:"Elizabeth Street", acres:0.14, ga:0.14 },
+            "10403_21": { park:"", loc:"Jane Street", acres:1.31, ga:1.31 },
+            "10404_1": { park:"", loc:"Lester Street", acres:2.57, ga:2.57 },
+            "10405_3": { park:"", loc:"Alland Street", acres:1.87, ga:1.87 },
+            "10406_1": { park:"", loc:"Raymond Street", acres:2.46, ga:2.46 },
+            "10407_1": { park:"", loc:"Clifford Street", acres:2.73, ga:2.73 },
+            "10407_2": { park:"", loc:"Clifford Street", acres:0.05, ga:0.05 },
+            "10408_1": { park:"", loc:"Albert Street", acres:2.79, ga:2.79 },
+            "10409_1": { park:"", loc:"Bank Place", acres:2.51, ga:2.51 },
+            "10410_1": { park:"", loc:"Bank Place", acres:2, ga:2 },
+            "10502_9": { park:"", loc:"Magnolia Avenue", acres:0.24, ga:0.24 },
+            "10503_5": { park:"little league", loc:"Poplar Drive", acres:0.75, ga:0.75 },
+            "10505_1": { park:"little league", loc:"Poplar Drive", acres:1.12, ga:1.12 },
+            "10505_2": { park:"little league", loc:"Poplar Drive", acres:3.73, ga:3.73 },
+            "10506_1": { park:"little league", loc:"Poplar Drive", acres:0.9, ga:0.9 },
+            "10507_1": { park:"", loc:"Palmetta Street", acres:2.3, ga:2.3 },
+            "10508_1": { park:"Little League Complex", loc:"Poplar Drive", acres:2.53, ga:2.53 },
+            "10509_1": { park:"Little League Complex", loc:"Poplar Drive", acres:2.3, ga:2.3 },
+            "10510_1": { park:"Little League Complex", loc:"Poplar Drive", acres:1.23, ga:1.23 },
+            "10511_1": { park:"little league", loc:"Poplar Drive", acres:1.15, ga:1.15 },
+            "10601_10": { park:"Riverside Park", loc:"Valley Road", acres:23, ga:23 },
+            "10801_5": { park:"", loc:"Valley Road", acres:10, ga:8.11, partial:true },
+            "10910_1": { park:"", loc:"Laura Drive", acres:3.58, ga:3.58 },
+            "11001_23.01": { park:"", loc:"Valley Road", acres:0.18, ga:0.18 },
+            "11202_1": { park:"", loc:"Orange Street", acres:1.3, ga:1.3 },
+            "11202_13": { park:"", loc:"Madison Street", acres:0.18, ga:0.18 },
+            "11203_15.01": { park:"", loc:"Orange Street", acres:3.2, ga:3.2 },
+            "11203_16": { park:"", loc:"Orange Street", acres:1.48, ga:1.48 },
+            "11401_5": { park:"", loc:"Somserset Street", acres:44.6, ga:44.6 },
+            "11503_3": { park:"", loc:"Essex Street", acres:3.16, ga:3.16 },
+            "11505_1": { park:"", loc:"Somerset Street", acres:3.92, ga:3.92 },
+            "11507_4.01": { park:"", loc:"Railroad Avenue", acres:0.75, ga:0.75 },
+            "11507_4.02": { park:"", loc:"Railroad Avenue", acres:0.8, ga:0.8 },
+            "11513_12": { park:"", loc:"Mercer Street", acres:0.57, ga:0.57 },
+            "11611_13": { park:"", loc:"Mercer Street", acres:0.87, ga:0.87 },
+            "11802_8.02": { park:"Stacey Estates", loc:"Stacey Court", acres:7.12, ga:7.12 },
+            "12004_12": { park:"", loc:"Valley Road", acres:0.25, ga:0.25 },
+            "12203_4": { park:"Riverwood at Millington", loc:"Francine Place", acres:5.5, ga:5.5 },
+            "12402_11": { park:"", loc:"Oaks Road", acres:5.21, ga:4.66, partial:true },
+            "12701_9": { park:"Shawnee Path", loc:"Shawnee Path", acres:14.2, ga:14.2 },
+            "12702_47.1": { park:"Hidden Valley", loc:"Ave Maria Court", acres:5, ga:5 },
+            "12901_4": { park:"Hicks Tract", loc:"Northfield Road", acres:59.235, ga:59.235 },
+            "13102_1": { park:"Stirling Lake", loc:"Central Avenue", acres:1.82, ga:1.55 },
+            "13102_20": { park:"Stirling Lake", loc:"Lake View Drive", acres:2.2, ga:2.68 },
+            "13103_1": { park:"", loc:"Lakeview Drive", acres:1.84, ga:1.84 },
+            "13103_35": { park:"", loc:"Lakeview Drive", acres:0.04, ga:0.04 },
+            "13103_43": { park:"", loc:"Lakeview Drive", acres:0.22, ga:0.22 },
+            "13104_1": { park:"Stirling Lake", loc:"Maple Avenue", acres:3.02, ga:2.9 },
+            "13105_23": { park:"", loc:"Delaware Avenue", acres:0.32, ga:0.27 },
+            "13108_7": { park:"Turtlerock Park", loc:"Central Avenue", acres:1.26, ga:1.26 },
+            "13204_11": { park:"", loc:"Delaware Avenue", acres:4.91, ga:4.91 },
+            "13205_15": { park:"", loc:"Delaware Avenue", acres:10.56, ga:10.56 },
+            "13301_1": { park:"Overlook Ridge", loc:"Lower Overlook Road", acres:5.05, ga:5.05 },
+            "13402_1.03": { park:"", loc:"Long Hill Road", acres:1.03, ga:1.03 },
+            "13402_5": { park:"Cornish Tract", loc:"Cottage Place", acres:17.76, ga:17.76 },
+            "13403_36": { park:"Cornish Tract", loc:"Cottage Place", acres:2.3, ga:2.3 },
+            "13404_15": { park:"Cornish Tract", loc:"Cottage Place", acres:29.64, ga:29.64 },
+            "13404_25": { park:"", loc:"Mountain Avenue", acres:0.38, ga:0.38 },
+            "13404_37": { park:"Cornish Tract", loc:"Cottage Place", acres:2.06, ga:2.06 },
+            "13406_39": { park:"", loc:"Cottage Place", acres:15.49, ga:15.49 },
+            "13407_15": { park:"Cornish Tract", loc:"Cottage Place", acres:3.19, ga:3.19 },
+            "13501_11": { park:"Cornish Tract", loc:"Monroe Avenue", acres:3.44, ga:3.44 },
+            "13507_9": { park:"", loc:"Isabell Road", acres:1.09, ga:1.09 },
+            "13511_2": { park:"", loc:"Milton Avenue", acres:0.69, ga:0.69 },
+            "13511_6": { park:"", loc:"Milton Avenue", acres:1.03, ga:1.03 },
+            "13512_21": { park:"", loc:"Daugherty Avenue", acres:0.52, ga:0.52 },
+            "13515_16": { park:"", loc:"Milton Avenue", acres:0.52, ga:0.52 },
+            "13515_35": { park:"", loc:"Milton Avenue", acres:0.5, ga:0.5 },
+            "13516_25": { park:"", loc:"Monroe Avenue", acres:0.6, ga:0.6 },
+            "13517_1": { park:"", loc:"Monroe Avenue", acres:3.34, ga:3.34 },
+            "13603_3": { park:"", loc:"Ellis Avenue", acres:9.65, ga:9.65 },
+            "13603_6": { park:"", loc:"York Drive", acres:28.89, ga:28.89 },
+            "13607_40": { park:"", loc:"Meyersville Road", acres:5, ga:5 },
+            "13701_23": { park:"Fennview", loc:"Deer Path", acres:5, ga:5 },
+            "13702_6": { park:"", loc:"Lacey Avenue", acres:0.25, ga:0.25 },
+            "13703_6": { park:"", loc:"Hillside Drive", acres:0.1, ga:0.1 },
+            "14602_9": { park:"Meyersville Field", loc:"New Vernon Road", acres:2.15, ga:2.15 }
+        };
+
+        // Normalised lookup so 47.1 and 47.10 resolve to the same parcel.
+        const rosiKey = (block, lot) => `${block}_${Number(lot)}`;
+        function getRosi(feature) {
+            const p = feature.properties;
+            if (!p.PCLBLOCK || p.PCLLOT == null) return null;
+            return ROSI_PARCELS[rosiKey(p.PCLBLOCK, p.PCLLOT)] || null;
+        }
 
         // Build lookup: block_lot -> category key
         const OPEN_SPACE_LOOKUP = {};
@@ -610,6 +735,8 @@
         let allParcels = [];
         let highlightedBlocks = new Set();
         let activeOSCategories = new Set(Object.keys(OPEN_SPACE_CATEGORIES));
+        let showRosi = true;          // outline Green Acres ROSI parcels
+        const ROSI_STROKE = '#b8860b';
 
         // Long Hill Township municipality code
         const MUN_CODE = '1430';
@@ -711,7 +838,9 @@
             }
 
             allParcels = allFeatures;
-            statusBar.textContent = `✓ ${allFeatures.length} parcels loaded`;
+            const rosiHere = allFeatures.filter(f => getRosi(f)).length;
+            document.getElementById('rosi-count').textContent = rosiHere;
+            statusBar.textContent = `✓ ${allFeatures.length} parcels loaded · ${rosiHere} on ROSI`;
             
             renderParcels();
             renderBlockLabels();
@@ -762,14 +891,27 @@
                         };
                     }
                     
+                    // ROSI is an encumbrance, not a category: it takes the stroke so a
+                    // parcel can show its category fill and its ROSI status at once.
+                    const onRosi = showRosi && !!getRosi(feature);
+
                     if (osActive) {
                         const cat = OPEN_SPACE_CATEGORIES[osCategory];
                         return {
-                            color: cat.color,
-                            weight: cat.provisional ? 2.5 : 2,
+                            color: onRosi ? ROSI_STROKE : cat.color,
+                            weight: onRosi ? 3 : (cat.provisional ? 2.5 : 2),
                             dashArray: cat.provisional ? '5,3' : null,
                             fillColor: cat.color,
                             fillOpacity: cat.provisional ? 0.3 : 0.45
+                        };
+                    }
+
+                    if (onRosi) {
+                        return {
+                            color: ROSI_STROKE,
+                            weight: 3,
+                            fillColor: ROSI_STROKE,
+                            fillOpacity: 0.15
                         };
                     }
 
@@ -786,12 +928,22 @@
                     const osBadge = osCategory 
                         ? `<span class="os-badge" style="background:${OPEN_SPACE_CATEGORIES[osCategory].color}">${OPEN_SPACE_CATEGORIES[osCategory].label}</span><br>` 
                         : '';
+                    const r = getRosi(feature);
+                    const rosiBadge = r
+                        ? `<span class="os-badge" style="background:${ROSI_STROKE}">Green Acres ROSI</span><br>` +
+                          `<span style="font-size:11px;color:#555">` +
+                          (r.park ? `${r.park}<br>` : '') +
+                          (r.ga != null ? `${r.ga} of ${r.acres ?? '?'} acres encumbered` : '') +
+                          (r.partial ? ' (partial lot)' : '') +
+                          `</span><br>`
+                        : '';
                     
                     const popup = `
                         <div class="popup-content">
                             <strong>Block ${p.PCLBLOCK || 'N/A'} / Lot ${p.PCLLOT || 'N/A'}</strong>
                             ${p.PCLQCODE ? ' (Qual: ' + p.PCLQCODE + ')' : ''}<br>
                             ${osBadge}
+                            ${rosiBadge}
                             ${p.PROP_LOC ? '📍 ' + p.PROP_LOC + '<br>' : ''}
                             ${p.OWNER_NAME ? '👤 ' + p.OWNER_NAME + '<br>' : ''}
                             ${p.BLDG_DESC ? '🏠 ' + p.BLDG_DESC + '<br>' : ''}
@@ -913,6 +1065,11 @@
             }
         });
 
+        document.getElementById('toggle-rosi').addEventListener('change', function() {
+            showRosi = this.checked;
+            renderParcels();
+        });
+
         document.getElementById('toggle-blocks').addEventListener('change', function() {
             if (this.checked) {
                 map.addLayer(blockLabelsLayer);
@@ -947,6 +1104,7 @@
             { key: 'block',  label: 'Block',    get: p => p.PCLBLOCK || '' },
             { key: 'lot',    label: 'Lot',      get: p => p.PCLLOT || '' },
             { key: 'cat',    label: 'Category', get: p => p.__cat || '' },
+            { key: 'rosi',   label: 'ROSI',     get: p => p.__rosi ? (p.__rosi.park || 'yes') : '' },
             { key: 'owner',  label: 'Owner',    get: p => p.OWNER_NAME || '' },
             { key: 'loc',    label: 'Location', get: p => p.PROP_LOC || '' },
             { key: 'acres',  label: 'Acres',    get: p => p.CALC_ACRE == null ? null : Number(p.CALC_ACRE), num: true },
@@ -961,12 +1119,15 @@
             let rows = allParcels.map(f => {
                 const p = Object.assign({}, f.properties);
                 p.__cat = getParcelOSCategory(f) || '';
+                p.__rosi = getRosi(f);
                 p.__feature = f;
                 return p;
             });
             if (osOnly) rows = rows.filter(p => p.__cat);
+            if (document.getElementById('table-rosi-only').checked) rows = rows.filter(p => p.__rosi);
             if (q) rows = rows.filter(p =>
-                [p.PCLBLOCK, p.PCLLOT, p.__cat, p.OWNER_NAME, p.PROP_LOC]
+                [p.PCLBLOCK, p.PCLLOT, p.__cat, p.OWNER_NAME, p.PROP_LOC,
+                 p.__rosi ? 'rosi ' + (p.__rosi.park || '') : '']
                     .some(v => String(v || '').toLowerCase().includes(q)));
             const col = COLUMNS.find(c => c.key === sortKey);
             rows.sort((a, b) => {
@@ -992,6 +1153,11 @@
                 const cat = p.__cat, color = cat ? OPEN_SPACE_CATEGORIES[cat].color : null;
                 return `<tr onclick="focusParcel(${i})">` + COLUMNS.map(c => {
                     const v = c.get(p);
+                    if (c.key === 'rosi')
+                        return `<td>${p.__rosi
+                            ? `<span class="rosi-tick">\u25c6</span>${p.__rosi.park || ''}` +
+                              (p.__rosi.partial ? ' <span style="color:#888">(partial)</span>' : '')
+                            : ''}</td>`;
                     if (c.key === 'cat')
                         return `<td>${cat ? `<span class="cat-dot" style="background:${color}"></span>${cat}` : '<span style="color:#aaa">\u2014</span>'}</td>`;
                     if (c.num)
@@ -1047,6 +1213,7 @@
 
         document.getElementById('table-search').addEventListener('input', renderTable);
         document.getElementById('table-os-only').addEventListener('change', renderTable);
+        document.getElementById('table-rosi-only').addEventListener('change', renderTable);
 
         // Init
         buildOSCheckboxes();
