@@ -23,25 +23,54 @@ dashed outline — they are parked for OSAC review rather than settled classific
 
 ## Green Acres ROSI
 
-79 parcels are also on the township's Recreation and Open Space Inventory
-(ROSI, February 2014 — fee simple; the conservation-restriction and lease pages of
-that filing are empty). ROSI listing is a Green Acres **encumbrance**, not an
-ownership category: listed land cannot be diverted or disposed of without NJDEP
-approval. A parcel can therefore sit in any category *and* be on the ROSI.
+Source: **NJDEP Office of Transactions and Public Land Administration, ROSI database
+search for Morris County / Long Hill Twp, October 2026.** This replaced the February
+2014 township filing in full.
 
-The map carries this as a separate flag rather than a category — ROSI parcels take a
-gold outline while keeping their category fill, so both read at once. The table has a
-ROSI column with the park or facility name, and a "ROSI only" filter. Popups show
-Green Acres encumbered acreage, which is less than the lot acreage where only part of
-a lot is encumbered.
+202 unique entries, all Fee Simple, in three ownership types:
 
-Matching is done on a normalised `block_Number(lot)` key, so the ROSI's `47.1` and the
-inventory's `47.10` resolve to the same parcel.
+| Type | Entries | Matches the inventory | Facility |
+|---|---|---|---|
+| Municipal | 81 | **all 81** | 15 named facilities |
+| County | 120 | none | Passaic River Park |
+| Non-Profit | 1 | none | IMBIMBO - PRC |
 
-**Four ROSI parcels were absent from the 2013 inventory** — `13102_1`, `10201_10.15`,
-`11802_8.02` and `13702_6`. Green Acres encumbered land missing from the open space
-inventory is a discrepancy for the committee, so they were added to `For OSAC Review`
-rather than being assigned a category here.
+ROSI listing is a Green Acres **encumbrance**, not an ownership category: listed land
+cannot be diverted or disposed of without NJDEP approval, and a parcel can sit in any
+category *and* be on the ROSI. The map carries it as a separate flag — ROSI parcels
+take a gold outline while keeping their category fill. The table has a ROSI column
+with the facility name and a "ROSI only" filter; popups show the interest and
+ownership type.
+
+### The county numbering gap
+
+Only the 81 Municipal entries use Long Hill's 5-digit tax blocks. The 120 County and
+1 Non-Profit entries are numbered in a different scheme — blocks `1`, `18`, `171`–`177`,
+some with decimals such as `171.30` — matching nothing in the township tax map. They
+will never match a parcel and never render on the map. **They are kept in the data
+verbatim rather than dropped**, because they are part of the filing and the gap is a
+real discrepancy to reconcile with NJDEP.
+
+48 of the 120 County entries have a lot number that coincides with some County parcel
+in the inventory (filed `blk 1 lot 10.21` against the inventory's `10201_10.21`), which
+hints at a crosswalk. The blocks genuinely differ, and several filed lots match more
+than one inventory block, so no crosswalk has been guessed. NJDEP's own disclaimer
+applies: *"The tax block and lot numbering of properties listed on the ROSI may have
+changed since the ROSI was submitted."*
+
+### What changed from the 2014 filing
+
+Against the 79 municipal parcels of the 2014 filing: 75 carried over, 6 added, 4 dropped.
+Three of the four drops pair with an added lot in the same block — `10201_10.15` →
+`10201_10.14`, `11802_8.02` → `11802_1`, `13702_6` → `13702_5` — which reads as NJDEP
+correcting lot numbers rather than parcels leaving the ROSI. Those three were in
+`For OSAC Review` precisely because the old filing listed them and the inventory did
+not; they are probably artifacts and are annotated as such, pending the committee.
+`13102_1` (Stirling Lake) is still ROSI-listed and remains a genuine gap.
+
+**Acreage is gone.** The NJDEP export carries Block, Lot, Facility, Interest and Type
+only. The Green Acres encumbered acreage the 2014 filing provided, and its partial-lot
+markers, are no longer available.
 
 ### Settled
 

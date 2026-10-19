@@ -576,10 +576,18 @@
                 parcels: [
                     "14701_26.02","14701_30","15202_4.02","14401_7.01","14701_77","14601_2","14501_6.01",
                     "14502_3.01","14501_6.02","10301_13","10301_15",
-                    // On the Feb 2014 Green Acres ROSI but absent from the 2013 open space
-                    // inventory. Green Acres encumbrance means these cannot be diverted, so
-                    // the omission is a discrepancy for the committee to resolve rather than
-                    // a classification call to make here.
+                    // Added because the Feb 2014 ROSI listed them while the 2013 inventory
+                    // did not. The Oct 2026 NJDEP ROSI changes that picture:
+                    //   13102_1      still ROSI-listed (Stirling Lake) — a genuine gap.
+                    //   10201_10.15  gone; 10201_10.14 is now listed instead, and that lot
+                    //                was already inventoried.
+                    //   11802_8.02   gone; 11802_1 is now listed instead, already inventoried.
+                    //   13702_6      gone; 13702_5 is now listed instead, already inventoried.
+                    // Those last three look like lot numbers the 2014 township filing got
+                    // wrong rather than parcels leaving the ROSI, so they are probably
+                    // artifacts and can likely be dropped. Left in place pending the
+                    // committee's confirmation — removing inventory entries on a pattern
+                    // read is not a call to make here.
                     "13102_1","10201_10.15","11802_8.02","13702_6"
                 ]
             }
@@ -587,100 +595,244 @@
 
 
         // ------------------------------------------------------------------
-        // Green Acres ROSI (Recreation and Open Space Inventory), Feb 2014.
-        // Source: Long_Hill_ROSI_Feb_2014_current1.xlsx, pages 4 and 4A (fee simple).
-        // The conservation-restriction and lease pages of that workbook are empty,
-        // and the block/lot change log has no entries, so fee simple is the whole list.
+        // Green Acres ROSI (Recreation and Open Space Inventory).
+        // Source: NJDEP Office of Transactions and Public Land Administration,
+        // ROSI database search for Morris County / Long Hill Twp, October 2026.
+        // This REPLACES the February 2014 township filing in full.
+        //
+        // 202 unique entries of three ownership types: 81 Municipal, 120 County
+        // (all Passaic River Park) and 1 Non-Profit. All are Fee Simple; the filing
+        // records no conservation restrictions or leases, and no diverted parcels
+        // (no -DIV / -P/DIV / -COMP markers).
         //
         // ROSI listing is an ENCUMBRANCE, not an ownership category: a parcel can sit
         // in any category above AND be on the ROSI. Land on this list cannot be
-        // diverted or disposed of without NJDEP Green Acres approval, so it is held
-        // here as a separate flag rather than as a category.
+        // diverted or disposed of without NJDEP Green Acres approval.
         //
-        // Keys are normalised block_Number(lot) so that ROSI's "47.1" matches the
-        // inventory's "47.10". `ga` is Green Acres encumbered acres, which is less
-        // than `acres` where only part of the lot is encumbered (`partial`).
+        // IMPORTANT — only the 81 Municipal entries use Long Hill's 5-digit tax
+        // blocks, and all 81 match this inventory. The 120 County and 1 Non-Profit
+        // entries are numbered in a different scheme (blocks 1, 18, 171-177, some
+        // with decimals such as 171.30) that corresponds to nothing in the township
+        // tax map, so they will never match a parcel and never render. They are kept
+        // here verbatim rather than dropped, because they are part of the filing and
+        // the numbering gap is a real discrepancy to reconcile with NJDEP. The
+        // source's own disclaimer covers this: "The tax block and lot numbering of
+        // properties listed on the ROSI may have changed since the ROSI was
+        // submitted." Do NOT guess a crosswalk — 48 of the 120 have a lot number
+        // that coincides with some County parcel, but the blocks genuinely differ.
+        //
+        // This source carries no acreage, so the Green Acres encumbered acreage that
+        // the 2014 filing provided is gone, along with its partial-lot markers.
+        //
+        // Keys are normalised block_Number(lot) so that a filed "47.1" matches the
+        // inventory's "47.10".
         const ROSI_PARCELS = {
-            "10201_10.15": { park:"Heritage Road", loc:"Heritage Road", acres:9.44, ga:9.44 },
-            "10402_8": { park:"", loc:"Elizabeth Street", acres:0.09, ga:0.09 },
-            "10402_54": { park:"", loc:"Elizabeth Street", acres:0.14, ga:0.14 },
-            "10403_21": { park:"", loc:"Jane Street", acres:1.31, ga:1.31 },
-            "10404_1": { park:"", loc:"Lester Street", acres:2.57, ga:2.57 },
-            "10405_3": { park:"", loc:"Alland Street", acres:1.87, ga:1.87 },
-            "10406_1": { park:"", loc:"Raymond Street", acres:2.46, ga:2.46 },
-            "10407_1": { park:"", loc:"Clifford Street", acres:2.73, ga:2.73 },
-            "10407_2": { park:"", loc:"Clifford Street", acres:0.05, ga:0.05 },
-            "10408_1": { park:"", loc:"Albert Street", acres:2.79, ga:2.79 },
-            "10409_1": { park:"", loc:"Bank Place", acres:2.51, ga:2.51 },
-            "10410_1": { park:"", loc:"Bank Place", acres:2, ga:2 },
-            "10502_9": { park:"", loc:"Magnolia Avenue", acres:0.24, ga:0.24 },
-            "10503_5": { park:"little league", loc:"Poplar Drive", acres:0.75, ga:0.75 },
-            "10505_1": { park:"little league", loc:"Poplar Drive", acres:1.12, ga:1.12 },
-            "10505_2": { park:"little league", loc:"Poplar Drive", acres:3.73, ga:3.73 },
-            "10506_1": { park:"little league", loc:"Poplar Drive", acres:0.9, ga:0.9 },
-            "10507_1": { park:"", loc:"Palmetta Street", acres:2.3, ga:2.3 },
-            "10508_1": { park:"Little League Complex", loc:"Poplar Drive", acres:2.53, ga:2.53 },
-            "10509_1": { park:"Little League Complex", loc:"Poplar Drive", acres:2.3, ga:2.3 },
-            "10510_1": { park:"Little League Complex", loc:"Poplar Drive", acres:1.23, ga:1.23 },
-            "10511_1": { park:"little league", loc:"Poplar Drive", acres:1.15, ga:1.15 },
-            "10601_10": { park:"Riverside Park", loc:"Valley Road", acres:23, ga:23 },
-            "10801_5": { park:"", loc:"Valley Road", acres:10, ga:8.11, partial:true },
-            "10910_1": { park:"", loc:"Laura Drive", acres:3.58, ga:3.58 },
-            "11001_23.01": { park:"", loc:"Valley Road", acres:0.18, ga:0.18 },
-            "11202_1": { park:"", loc:"Orange Street", acres:1.3, ga:1.3 },
-            "11202_13": { park:"", loc:"Madison Street", acres:0.18, ga:0.18 },
-            "11203_15.01": { park:"", loc:"Orange Street", acres:3.2, ga:3.2 },
-            "11203_16": { park:"", loc:"Orange Street", acres:1.48, ga:1.48 },
-            "11401_5": { park:"", loc:"Somserset Street", acres:44.6, ga:44.6 },
-            "11503_3": { park:"", loc:"Essex Street", acres:3.16, ga:3.16 },
-            "11505_1": { park:"", loc:"Somerset Street", acres:3.92, ga:3.92 },
-            "11507_4.01": { park:"", loc:"Railroad Avenue", acres:0.75, ga:0.75 },
-            "11507_4.02": { park:"", loc:"Railroad Avenue", acres:0.8, ga:0.8 },
-            "11513_12": { park:"", loc:"Mercer Street", acres:0.57, ga:0.57 },
-            "11611_13": { park:"", loc:"Mercer Street", acres:0.87, ga:0.87 },
-            "11802_8.02": { park:"Stacey Estates", loc:"Stacey Court", acres:7.12, ga:7.12 },
-            "12004_12": { park:"", loc:"Valley Road", acres:0.25, ga:0.25 },
-            "12203_4": { park:"Riverwood at Millington", loc:"Francine Place", acres:5.5, ga:5.5 },
-            "12402_11": { park:"", loc:"Oaks Road", acres:5.21, ga:4.66, partial:true },
-            "12701_9": { park:"Shawnee Path", loc:"Shawnee Path", acres:14.2, ga:14.2 },
-            "12702_47.1": { park:"Hidden Valley", loc:"Ave Maria Court", acres:5, ga:5 },
-            "12901_4": { park:"Hicks Tract", loc:"Northfield Road", acres:59.235, ga:59.235 },
-            "13102_1": { park:"Stirling Lake", loc:"Central Avenue", acres:1.82, ga:1.55 },
-            "13102_20": { park:"Stirling Lake", loc:"Lake View Drive", acres:2.2, ga:2.68 },
-            "13103_1": { park:"", loc:"Lakeview Drive", acres:1.84, ga:1.84 },
-            "13103_35": { park:"", loc:"Lakeview Drive", acres:0.04, ga:0.04 },
-            "13103_43": { park:"", loc:"Lakeview Drive", acres:0.22, ga:0.22 },
-            "13104_1": { park:"Stirling Lake", loc:"Maple Avenue", acres:3.02, ga:2.9 },
-            "13105_23": { park:"", loc:"Delaware Avenue", acres:0.32, ga:0.27 },
-            "13108_7": { park:"Turtlerock Park", loc:"Central Avenue", acres:1.26, ga:1.26 },
-            "13204_11": { park:"", loc:"Delaware Avenue", acres:4.91, ga:4.91 },
-            "13205_15": { park:"", loc:"Delaware Avenue", acres:10.56, ga:10.56 },
-            "13301_1": { park:"Overlook Ridge", loc:"Lower Overlook Road", acres:5.05, ga:5.05 },
-            "13402_1.03": { park:"", loc:"Long Hill Road", acres:1.03, ga:1.03 },
-            "13402_5": { park:"Cornish Tract", loc:"Cottage Place", acres:17.76, ga:17.76 },
-            "13403_36": { park:"Cornish Tract", loc:"Cottage Place", acres:2.3, ga:2.3 },
-            "13404_15": { park:"Cornish Tract", loc:"Cottage Place", acres:29.64, ga:29.64 },
-            "13404_25": { park:"", loc:"Mountain Avenue", acres:0.38, ga:0.38 },
-            "13404_37": { park:"Cornish Tract", loc:"Cottage Place", acres:2.06, ga:2.06 },
-            "13406_39": { park:"", loc:"Cottage Place", acres:15.49, ga:15.49 },
-            "13407_15": { park:"Cornish Tract", loc:"Cottage Place", acres:3.19, ga:3.19 },
-            "13501_11": { park:"Cornish Tract", loc:"Monroe Avenue", acres:3.44, ga:3.44 },
-            "13507_9": { park:"", loc:"Isabell Road", acres:1.09, ga:1.09 },
-            "13511_2": { park:"", loc:"Milton Avenue", acres:0.69, ga:0.69 },
-            "13511_6": { park:"", loc:"Milton Avenue", acres:1.03, ga:1.03 },
-            "13512_21": { park:"", loc:"Daugherty Avenue", acres:0.52, ga:0.52 },
-            "13515_16": { park:"", loc:"Milton Avenue", acres:0.52, ga:0.52 },
-            "13515_35": { park:"", loc:"Milton Avenue", acres:0.5, ga:0.5 },
-            "13516_25": { park:"", loc:"Monroe Avenue", acres:0.6, ga:0.6 },
-            "13517_1": { park:"", loc:"Monroe Avenue", acres:3.34, ga:3.34 },
-            "13603_3": { park:"", loc:"Ellis Avenue", acres:9.65, ga:9.65 },
-            "13603_6": { park:"", loc:"York Drive", acres:28.89, ga:28.89 },
-            "13607_40": { park:"", loc:"Meyersville Road", acres:5, ga:5 },
-            "13701_23": { park:"Fennview", loc:"Deer Path", acres:5, ga:5 },
-            "13702_6": { park:"", loc:"Lacey Avenue", acres:0.25, ga:0.25 },
-            "13703_6": { park:"", loc:"Hillside Drive", acres:0.1, ga:0.1 },
-            "14602_9": { park:"Meyersville Field", loc:"New Vernon Road", acres:2.15, ga:2.15 }
+            "1_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_1.18": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_2": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_2.02": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_3": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_3.02": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_10.21": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_10.29": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_10.3": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_10.31": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_10.32": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "1_16.02": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "18_4": { park:"IMBIMBO - PRC", interest:"FEE", type:"N" },
+            "171_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171_17": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171_18": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171_19": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171_20": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171_21": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.1_26": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.19_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.22_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.23_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.27_815": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.28_834": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.30_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.30_10": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.31_14": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.31_15": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.31_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.32_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.32_908": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.33_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.33_880": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.34_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.35_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.36_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.36_936": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.37_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.37_947": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.38_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.38_968": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "171.39_1001": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "172_178": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "173_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "173_180": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_2": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_3": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_4": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_5": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_6": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_7": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_8": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_9": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_10": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_11": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_12": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_13": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_14": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_15": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_17": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_18": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_19": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_20": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_21": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_22": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_23": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_24": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_25": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_26": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_27": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "174_28": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_2": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_3": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_4": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_5": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_6": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_7": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_8": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_9": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_10": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_11": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_12": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_13": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_14": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_15": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_17": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_18": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_19": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_20": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_21": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_22": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_23": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_24": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "175_25": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_2": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_3": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_4": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_5": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_6": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_7": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_8": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_9": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_10": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_11": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_12": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_13": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_14": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_15": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_16": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_17": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_18": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_19": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "176_20": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "177_1": { park:"PASSAIC RIVER PARK", interest:"FEE", type:"C" },
+            "10201_10.14": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10402_8": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10402_54": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10403_21": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10404_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10405_3": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10406_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10407_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10407_2": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10408_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10409_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10410_1": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10502_9": { park:"Heritage Road", interest:"FEE", type:"M" },
+            "10503_5": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10503_8": { park:"FENNVIEW", interest:"FEE", type:"M" },
+            "10504_8": { park:"FENNVIEW", interest:"FEE", type:"M" },
+            "10505_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10505_2": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10506_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10507_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10509_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10510_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10511_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10601_10": { park:"Riverside Park", interest:"FEE", type:"M" },
+            "10801_5": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "10910_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11001_23.01": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11202_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11202_13": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11203_15.01": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11203_16": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11401_5": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11503_3": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11505_1": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11507_4.01": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11507_4.02": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11513_12": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11601_9": { park:"FENNVIEW", interest:"FEE", type:"M" },
+            "11611_13": { park:"Little League Complex", interest:"FEE", type:"M" },
+            "11802_1": { park:"Stacey Estates", interest:"FEE", type:"M" },
+            "12004_12": { park:"Stacey Estates", interest:"FEE", type:"M" },
+            "12203_4": { park:"Riverwood at Millington", interest:"FEE", type:"M" },
+            "12402_11": { park:"Riverwood at Millington", interest:"FEE", type:"M" },
+            "12701_9": { park:"Shawnee Path", interest:"FEE", type:"M" },
+            "12702_47.1": { park:"Hidden Valley", interest:"FEE", type:"M" },
+            "12901_4": { park:"Hicks Tract", interest:"FEE", type:"M" },
+            "13102_1": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13102_20": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13103_1": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13103_35": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13103_43": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13104_1": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13105_23": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13108_7": { park:"Turtlerock Park", interest:"FEE", type:"M" },
+            "13204_11": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13205_15": { park:"Stirling Lake", interest:"FEE", type:"M" },
+            "13301_1": { park:"Overlook Ridge", interest:"FEE", type:"M" },
+            "13402_1.03": { park:"Overlook Ridge", interest:"FEE", type:"M" },
+            "13402_5": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13403_36": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13404_15": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13404_25": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13404_37": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13406_39": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13407_15": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13501_11": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13507_9": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13511_2": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13511_6": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13512_21": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13515_16": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13515_35": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13516_25": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13517_1": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13603_3": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13603_6": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13607_40": { park:"Cornish Tract", interest:"FEE", type:"M" },
+            "13701_23": { park:"Fennview", interest:"FEE", type:"M" },
+            "13702_5": { park:"Fennview", interest:"FEE", type:"M" },
+            "13703_6": { park:"Fennview", interest:"FEE", type:"M" },
+            "14602_9": { park:"Meyersville Field", interest:"FEE", type:"M" }
         };
+
+        const ROSI_TYPE = { M: "Municipal", C: "County", N: "Non-Profit" };
+        const ROSI_INTEREST = { FEE: "Fee Simple", CR: "Conservation Restriction", LEASE: "Lease" };
 
         // Normalised lookup so 47.1 and 47.10 resolve to the same parcel.
         const rosiKey = (block, lot) => `${block}_${Number(lot)}`;
@@ -933,8 +1085,7 @@
                         ? `<span class="os-badge" style="background:${ROSI_STROKE}">Green Acres ROSI</span><br>` +
                           `<span style="font-size:11px;color:#555">` +
                           (r.park ? `${r.park}<br>` : '') +
-                          (r.ga != null ? `${r.ga} of ${r.acres ?? '?'} acres encumbered` : '') +
-                          (r.partial ? ' (partial lot)' : '') +
+                          `${ROSI_INTEREST[r.interest] || r.interest} \u00b7 ${ROSI_TYPE[r.type] || r.type}` +
                           `</span><br>`
                         : '';
                     
@@ -1155,8 +1306,7 @@
                     const v = c.get(p);
                     if (c.key === 'rosi')
                         return `<td>${p.__rosi
-                            ? `<span class="rosi-tick">\u25c6</span>${p.__rosi.park || ''}` +
-                              (p.__rosi.partial ? ' <span style="color:#888">(partial)</span>' : '')
+                            ? `<span class="rosi-tick">\u25c6</span>${p.__rosi.park || ''}`
                             : ''}</td>`;
                     if (c.key === 'cat')
                         return `<td>${cat ? `<span class="cat-dot" style="background:${color}"></span>${cat}` : '<span style="color:#aaa">\u2014</span>'}</td>`;
