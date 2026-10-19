@@ -63,10 +63,16 @@ changed since the ROSI was submitted."*
 Against the 79 municipal parcels of the 2014 filing: 75 carried over, 6 added, 4 dropped.
 Three of the four drops pair with an added lot in the same block — `10201_10.15` →
 `10201_10.14`, `11802_8.02` → `11802_1`, `13702_6` → `13702_5` — which reads as NJDEP
-correcting lot numbers rather than parcels leaving the ROSI. Those three were in
-`For OSAC Review` precisely because the old filing listed them and the inventory did
-not; they are probably artifacts and are annotated as such, pending the committee.
-`13102_1` (Stirling Lake) is still ROSI-listed and remains a genuine gap.
+correcting lot numbers rather than parcels leaving the ROSI.
+
+`10201_10.15` has since been **removed** from `For OSAC Review`: it is a real,
+privately owned lot and not township open space, so the 2014 entry was an error for the
+adjacent township lot `10201_10.14` — correctly inventoried as Town —
+Wetland/Floodplain and on the current ROSI.
+
+`11802_8.02` and `13702_6` remain in `For OSAC Review`, annotated as likely artifacts of
+the same kind, pending the committee. `13102_1` (Stirling Lake) is still ROSI-listed and
+remains a genuine gap.
 
 **Acreage is gone.** The NJDEP export carries Block, Lot, Facility, Interest and Type
 only. The Green Acres encumbered acreage the 2014 filing provided, and its partial-lot
